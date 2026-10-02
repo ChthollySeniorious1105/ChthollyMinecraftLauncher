@@ -38,3 +38,6 @@ apps/*/out/
 launcher/build/
 tools/lumikeymapper/artifacts/
 tools/bedrocktool/.toolchain/
+
+# Pulse AI weights (packaged as add-ons by build.ps1)
+rvc/

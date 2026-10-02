@@ -17,9 +17,9 @@
 param(
   [switch]$SkipTests, [switch]$NoZip, [switch]$SkipTools, [switch]$SkipApps, [switch]$SkipAddons, [switch]$WithServers,
   [string]$Version = "0.2.1", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
-  # Pulse AI weights (not in git): base models and optional voices.
-  [string]$PulseModels = "$PSScriptRoot\modules\pulse\client\native\models",
-  [string]$PulseVoices = ""
+  # Pulse AI weights (not in git, see .gitignore): base models in rvc\, extra voices in rvc\voice\.
+  [string]$PulseModels = "$PSScriptRoot\rvc",
+  [string]$PulseVoices = "$PSScriptRoot\rvc\voice"
 )
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
@@ -131,9 +131,12 @@ if (-not $SkipAddons) {
   Invoke-Step "add-ons" {
     $addons = @()
     function Add-Addon([string]$id, [string]$src, [string]$sub, [string]$pattern) {
-      if (-not $src -or -not (Test-Path $src)) { Write-Warning "跳过分包 ${id}：找不到 $src"; return $null }
+      # A missing source used to only warn, silently shipping an empty cml-addons.json — fail instead.
+      $hint = "（用 -PulseModels / -PulseVoices 指定路径，或加 -SkipAddons 跳过分包）"
+      if (-not $src) { throw "分包 ${id}：未指定源目录$hint" }
+      if (-not (Test-Path $src)) { throw "分包 ${id}：找不到 $src$hint" }
       $files = Get-ChildItem $src -File -Filter $pattern
-      if (-not $files) { Write-Warning "跳过分包 ${id}：$src 中没有 $pattern"; return $null }
+      if (-not $files) { throw "分包 ${id}：$src 中没有 $pattern$hint" }
       $stage = Join-Path $dist "addon-stage\$id\$sub"
       New-Item -ItemType Directory -Force $stage | Out-Null
       $files | Copy-Item -Destination $stage
