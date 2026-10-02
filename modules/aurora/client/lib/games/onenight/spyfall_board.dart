@@ -152,6 +152,9 @@ class _SpyfallBoardState extends State<SpyfallBoard> {
     );
   }
 
+  /// 地点 / 食物 / … (generic 词条 in mixed games).
+  String get noun => v['noun'] as String? ?? '地点';
+
   Widget _roleCard() {
     final loc = v['location'] as String?;
     final role = v['myRole'] as String? ?? '';
@@ -168,13 +171,13 @@ class _SpyfallBoardState extends State<SpyfallBoard> {
       child: hide
           ? const Text('身份已隐藏（点击右上角显示）')
           : Row(children: [
-              Icon(amSpy ? Icons.person_search : Icons.place, color: c, size: 40),
+              Icon(amSpy ? Icons.person_search : (noun == '地点' ? Icons.place : Icons.style), color: c, size: 40),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(amSpy ? '你是间谍！' : '地点：${loc ?? '?'}',
+                  Text(amSpy ? '你是间谍！' : '$noun：${loc ?? '?'}',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: c)),
-                  Text(amSpy ? '你不知道地点。从别人的问答中推理，随时可以亮明身份猜地点。' : '你的角色：$role',
+                  Text(amSpy ? '你不知道$noun。从别人的问答中推理，随时可以亮明身份猜$noun。' : '你的角色：$role',
                       style: const TextStyle(fontSize: 12.5)),
                 ]),
               ),
@@ -287,7 +290,7 @@ class _SpyfallBoardState extends State<SpyfallBoard> {
               style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
               onPressed: guess == null ? null : () => g.act({'type': 'guess', 'location': guess}),
               icon: const Icon(Icons.flag, size: 18),
-              label: Text(guess == null ? '在下方地点表中选择后猜地点' : '亮明身份：猜「$guess」'),
+              label: Text(guess == null ? '在下方$noun表中选择后猜$noun' : '亮明身份：猜「$guess」'),
             ),
         ]),
       ]);
@@ -346,7 +349,7 @@ class _SpyfallBoardState extends State<SpyfallBoard> {
     final canGuess = amSpy && phase == 'play';
     final cs = Theme.of(context).colorScheme;
     return OnPanel(
-      title: canGuess ? '地点表（点选要猜的地点，长按划掉）' : '地点表（长按可划掉排除）',
+      title: canGuess ? '$noun表（点选要猜的$noun，长按划掉）' : '$noun表（长按可划掉排除）',
       icon: Icons.map,
       child: Wrap(spacing: 5, runSpacing: 5, children: [
         for (final l in locs)
@@ -406,7 +409,7 @@ class _SpyfallBoardState extends State<SpyfallBoard> {
     return ResultBanner(
       res['text'] as String? ?? '',
       child: Text(
-        '地点：${res['location']} · 间谍：${g.name(onInt(res['spy']))}\n'
+        '${res['noun'] ?? noun}：${res['location']} · 间谍：${g.name(onInt(res['spy']))}\n'
         '${[for (var s = 0; s < gain.length; s++) if (gain[s] > 0) '${g.name(s)} +${gain[s]}'].join('  ')}',
         textAlign: TextAlign.center,
       ),

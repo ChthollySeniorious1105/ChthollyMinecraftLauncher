@@ -37,6 +37,14 @@ class Spyfall extends GameEngine {
   int get totalRounds => setup.opt<int>('rounds', 3);
   int get roundMs => setup.opt<int>('minutes', 8) * 60000;
 
+  /// Word pack: location / food / animal / vehicle / sport / event / mix.
+  String get packId => setup.opt<String>('pack', 'location');
+  late final Map<String, List<String>> items = spyfallItems(packId);
+  late final List<String> itemNames = items.keys.toList();
+
+  /// What the secret is called (地点 / 食物 …) for the current round.
+  String get noun => packId == 'mix' ? (spyfallPackOf[location]?.noun ?? '词条') : spyfallNoun(packId);
+
   int round = 0;
   String phase = 'play';
   int spy = -1;
@@ -74,15 +82,15 @@ class Spyfall extends GameEngine {
   @override
   void start() {
     scores = List.filled(players, 0);
-    host.log('谁是间谍开始！共 $totalRounds 轮，每轮 ${roundMs ~/ 60000} 分钟');
+    host.log('谁是间谍开始！词库：${packId == 'mix' ? '混合' : spyfallNoun(packId)}（${itemNames.length} 个），共 $totalRounds 轮，每轮 ${roundMs ~/ 60000} 分钟');
     _newRound();
   }
 
   void _newRound() {
     round++;
     spy = rng.nextInt(players);
-    location = spyfallLocationNames[rng.nextInt(spyfallLocationNames.length)];
-    final pool = shuffled(spyfallLocations[location]!, rng);
+    location = itemNames[rng.nextInt(itemNames.length)];
+    final pool = shuffled(items[location]!, rng);
     roles = [for (var s = 0; s < players; s++) s == spy ? '间谍' : pool[s % pool.length]];
     asker = rng.nextInt(players);
     answerer = -1;
@@ -168,12 +176,12 @@ class Spyfall extends GameEngine {
             if (players == 2) _resolveAccuse();
             return;
           case 'guess':
-            if (seat != spy) throw GameError('只有间谍可以猜地点');
+            if (seat != spy) throw GameError('只有间谍可以猜$noun');
             final loc = asStr(a['location']);
-            if (!spyfallLocations.containsKey(loc)) throw GameError('未知的地点');
+            if (!items.containsKey(loc)) throw GameError('未知的$noun');
             clock.stop();
             final ok = loc == location;
-            host.log('${name(seat)} 亮明间谍身份，猜测地点是「$loc」——${ok ? '猜对了！' : '猜错了！'}');
+            host.log('${name(seat)} 亮明间谍身份，猜测$noun是「$loc」——${ok ? '猜对了！' : '猜错了！'}');
             _endRound(ok ? 'spyGuess' : 'spyWrong', guess: loc);
             return;
           default:
@@ -266,12 +274,13 @@ class Spyfall extends GameEngine {
       'spyWins': spyWins,
       'spy': spy,
       'location': location,
+      'noun': noun,
       'roles': roles,
       'guess': guess,
       'accused': accused,
       'gain': gain,
       'text': switch (how) {
-        'spyGuess' => '间谍猜中地点「$location」，间谍获胜',
+        'spyGuess' => '间谍猜中$noun「$location」，间谍获胜',
         'spyWrong' => '间谍猜错了（猜「$guess」，实际是「$location」），平民获胜',
         'caught' => '间谍被全票指认，平民获胜',
         'caughtFinal' => '时间到，间谍被票出，平民获胜',
@@ -279,7 +288,7 @@ class Spyfall extends GameEngine {
         _ => '时间到，间谍成功潜伏',
       },
     };
-    history.add({'round': round, 'spy': spy, 'location': location, 'spyWins': spyWins});
+    history.add({'round': round, 'spy': spy, 'location': location, 'noun': noun, 'spyWins': spyWins});
     cont.clear();
     phase = 'roundEnd';
   }
@@ -293,7 +302,10 @@ class Spyfall extends GameEngine {
       'phase': phase,
       'round': round,
       'totalRounds': totalRounds,
-      'locations': spyfallLocationNames,
+      'locations': itemNames,
+      'pack': packId,
+      // in mixed games the spy must not learn the category, so the label stays generic
+      'noun': packId == 'mix' ? '词条' : noun,
       'myRole': me ? roles[seat] : null,
       'amSpy': me ? isSpy : null,
       'location': (me && !isSpy) || reveal ? location : null,
@@ -330,7 +342,7 @@ class Spyfall extends GameEngine {
     final text = feed.map((e) => '${e['q']} ${e['a']}').join(' ');
     var best = <String>[];
     var bestScore = 0;
-    for (final e in spyfallLocations.entries) {
+    for (final e in items.entries) {
       var sc = text.contains(e.key) ? 3 : 0;
       for (final r in e.value) {
         if (text.contains(r)) sc++;
@@ -350,16 +362,18 @@ class Spyfall extends GameEngine {
   final AiSlot _ai = AiSlot();
   static const Map<String, dynamic> _wait = {'_pending': true};
 
-  static const _sys = '你在玩“谁是间谍”（Spyfall）。除了间谍，所有人都知道大家所在的地点，并各有一个身份。'
-      '大家轮流互相提问、回答。平民要通过问答找出间谍，但问题和回答不能太直白，否则间谍会猜出地点；'
-      '间谍不知道地点，要装作知道、含糊地回答，并从别人的问答中推断地点。玩家用名字称呼。回答要简短自然。';
+  String get _w => packId == 'mix' ? '词条' : noun;
+
+  String get _sys => '你在玩“谁是间谍”（Spyfall）。除了间谍，所有人都知道同一个$_w（${packId == 'mix' ? '可能是地点、食物、动物等' : '例如“${itemNames.first}”'}），并各有一个与之相关的身份。'
+      '大家轮流互相提问、回答。平民要通过问答找出间谍，但问题和回答不能太直白，否则间谍会猜出$_w；'
+      '间谍不知道$_w，要装作知道、含糊地回答，并从别人的问答中推断$_w。玩家用名字称呼。回答要简短自然。';
 
   String _aiContext(int seat) {
     final b = StringBuffer();
     if (seat == spy) {
-      b.writeln('你是间谍，你不知道地点。可能的地点：${spyfallLocationNames.join('、')}。');
+      b.writeln('你是间谍，你不知道$_w。可能的$_w：${itemNames.join('、')}。');
     } else {
-      b.writeln('地点是「$location」，你的身份是「${roles[seat]}」。');
+      b.writeln('$noun是「$location」，你的身份是「${roles[seat]}」。');
     }
     b.writeln('玩家：${[for (var s = 0; s < players; s++) '${name(s)}${s == seat ? '（你）' : ''}'].join('、')}');
     b.writeln('目前的问答：');
@@ -383,7 +397,7 @@ class Spyfall extends GameEngine {
     final r = _ai.poll(setup.ai!, 'ans:$round:${feed.length}', () => AiRequest(
         system: _sys,
         prompt: '${_aiContext(seat)}\n${name(asker)} 问你：$pendingQ\n'
-            '${seat == spy ? '你是间谍，请给一个模糊但听起来合理的回答，别暴露自己不知道地点。' : '请结合地点和身份回答，但不要说出地点名称，也别太直白。'}'
+            '${seat == spy ? '你是间谍，请给一个模糊但听起来合理的回答，别暴露自己不知道$_w。' : '请结合$_w和身份回答，但不要说出$_w名称，也别太直白。'}'
             '只输出你的回答（一句话，不超过 30 字）。',
         maxTokens: 80));
     if (r.pending) return _wait;
@@ -395,7 +409,7 @@ class Spyfall extends GameEngine {
     final r = _ai.poll(setup.ai!, 'ask:$round:${feed.length}', () => AiRequest(
         system: _sys,
         prompt: '${_aiContext(seat)}\n轮到你提问。可以问的人：${[for (final t in targets) '$t=${name(t)}'].join('，')}。'
-            '${seat == spy ? '你是间谍，问一个通用、不暴露自己的问题，最好能从回答中套出地点线索。' : '问一个能试探对方是否知道地点的问题，但不要泄露地点。'}'
+            '${seat == spy ? '你是间谍，问一个通用、不暴露自己的问题，最好能从回答中套出$_w线索。' : '问一个能试探对方是否知道$_w的问题，但不要泄露$_w。'}'
             '只输出 JSON：{"target": 编号, "text": "你的问题（不超过 30 字）"}',
         maxTokens: 120));
     if (r.pending) return _wait;
@@ -411,19 +425,20 @@ class Spyfall extends GameEngine {
   String? aiSpyGuess() {
     final r = _ai.poll(setup.ai!, 'guess:$round:${feed.length}', () => AiRequest(
         system: _sys,
-        prompt: '${_aiContext(spy)}\n根据以上问答推断最可能的地点。只输出 JSON：{"location": "地点名"}，地点必须来自可能的地点列表。',
+        prompt: '${_aiContext(spy)}\n根据以上问答推断最可能的$_w。只输出 JSON：{"location": "名称"}，必须来自可能的$_w列表。',
         maxTokens: 60));
     if (r.pending) return '';
-    return parseSpyLocation(r.text);
+    return parseSpyLocation(r.text, items);
   }
 
-  static String? parseSpyLocation(String? reply) {
+  /// Parses the spy's AI guess; [valid] defaults to the location pack.
+  static String? parseSpyLocation(String? reply, [Map<String, List<String>> valid = spyfallLocations]) {
     if (reply == null) return null;
     final j = AiText.json(reply);
     final v = j == null ? AiText.firstLine(reply) : j['location'];
     if (v is! String) return null;
     final t = v.trim();
-    return spyfallLocations.containsKey(t) ? t : null;
+    return valid.containsKey(t) ? t : null;
   }
 
   @override

@@ -201,10 +201,33 @@ void main() {
 
   group('spyfall', () {
     test('locations data', () {
-      expect(spyfallLocations.length, greaterThanOrEqualTo(40));
-      for (final r in spyfallLocations.values) {
-        expect(r.length, greaterThanOrEqualTo(6));
+      expect(spyfallLocations.length, greaterThanOrEqualTo(100));
+      final all = <String>{};
+      var total = 0;
+      for (final p in spyfallPacks) {
+        expect(p.items.length, greaterThanOrEqualTo(15), reason: p.id);
+        for (final e in p.items.entries) {
+          expect(e.value.length, greaterThanOrEqualTo(6), reason: e.key);
+          expect(all.add(e.key), true, reason: 'duplicate ${e.key}');
+          total++;
+        }
       }
+      expect(total, greaterThanOrEqualTo(200));
+      expect(spyfallItems('mix').length, total);
+    });
+
+    test('word packs: food pack only deals food, mixed hides the category', () {
+      final e = Spyfall(_setup(4, {'rounds': 1, 'pack': 'food'}))..host = SimHost();
+      e.start();
+      expect(spyfallFoods.containsKey(e.location), true);
+      expect(e.view(e.spy)['noun'], '食物');
+      expect(() => e.handle(e.spy, {'type': 'guess', 'location': '医院'}), throwsA(isA<GameError>()));
+      e.handle(e.spy, {'type': 'guess', 'location': e.location});
+      expect(e.result!['spyWins'], true);
+      final m = Spyfall(_setup(4, {'rounds': 1, 'pack': 'mix'}, 7))..host = SimHost();
+      m.start();
+      expect(m.view(m.spy)['noun'], '词条');
+      expect((m.view(m.spy)['locations'] as List).length, spyfallItems('mix').length);
     });
 
     test('location hidden from spy and spectators; spy guess wins', () {
