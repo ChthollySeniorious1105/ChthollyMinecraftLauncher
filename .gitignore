@@ -1,0 +1,7 @@
+build/
+.dart_tool/
+dist/
+*.iml
+.idea/
+launcher/windows/flutter/ephemeral/
+pubspec_overrides.yaml

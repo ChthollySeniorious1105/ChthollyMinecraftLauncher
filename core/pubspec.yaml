@@ -1,0 +1,18 @@
+name: cml_core
+description: ChthollyMinecraftLauncher core library (game install/launch, auth, downloads, formats, tunnel).
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.9.0
+dependencies:
+  archive: ^4.0.0
+  brotli: ^0.6.0
+  crypto: ^3.0.6
+  cryptography: ^2.9.0
+  ffi: ^2.1.0
+  image: ^4.3.0
+  path: ^1.9.0
+  win32: ^5.5.0
+dev_dependencies:
+  test: any
+  lints: any

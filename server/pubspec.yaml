@@ -1,0 +1,13 @@
+name: cmls
+description: CMLS — ChthollyMinecraftLauncher Server (secure LAN relay).
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.9.0
+dependencies:
+  crypto: ^3.0.6
+  cml_core:
+    path: ../core
+dev_dependencies:
+  test: any
+  lints: any

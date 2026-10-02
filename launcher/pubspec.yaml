@@ -1,0 +1,30 @@
+name: cml
+description: "ChthollyMinecraftLauncher — Minecraft 启动器"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cml_core:
+    path: ../core
+  path: ^1.9.0
+  url_launcher: ^6.3.2
+  file_selector: ^1.0.3
+  window_manager: ^0.5.0
+  desktop_drop: ^0.8.0
+  image: ^4.3.0
+  vector_math: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logo.png
