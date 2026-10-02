@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../i18n/i18n.dart';
+
 import '../state.dart';
 
 /// Microsoft sign-in: the user enters a short code at microsoft.com/link.
@@ -19,7 +21,7 @@ class _LoginDialog extends StatefulWidget {
 
 class _LoginDialogState extends State<_LoginDialog> {
   DeviceCode? code;
-  String step = '正在获取登录代码…';
+  String step = trGlobal('正在获取登录代码…');
   String? error;
   bool copied = false;
   bool finishing = false;
@@ -48,7 +50,7 @@ class _LoginDialogState extends State<_LoginDialog> {
       error = null;
       copied = false;
       finishing = false;
-      step = '正在获取登录代码…';
+      step = trGlobal('正在获取登录代码…');
     });
     try {
       final dc = await app.ctx.auth.startDeviceCode(method: method);
@@ -56,7 +58,7 @@ class _LoginDialogState extends State<_LoginDialog> {
       setState(() {
         code = dc;
         expires = DateTime.now().add(Duration(seconds: dc.expiresIn));
-        step = '等待你在浏览器中完成登录';
+        step = trGlobal('等待你在浏览器中完成登录');
       });
       await _copy();
       final acc = await app.ctx.auth.pollDeviceCode(dc, cancel: myCancel, onStep: (s) {
@@ -114,8 +116,8 @@ class _LoginDialogState extends State<_LoginDialog> {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('登录 Microsoft 账号', style: t.textTheme.titleMedium?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w700)),
-                  Text('使用拥有 Minecraft Java 版的账号', style: t.textTheme.bodySmall?.copyWith(color: cs.onPrimary.withValues(alpha: 0.85))),
+                  Text(trGlobal('登录 Microsoft 账号'), style: t.textTheme.titleMedium?.copyWith(color: cs.onPrimary, fontWeight: FontWeight.w700)),
+                  Text(trGlobal('使用拥有 Minecraft Java 版的账号'), style: t.textTheme.bodySmall?.copyWith(color: cs.onPrimary.withValues(alpha: 0.85))),
                 ]),
               ),
               IconButton(icon: Icon(Icons.close, color: cs.onPrimary), onPressed: () => Navigator.pop(context)),
@@ -138,11 +140,11 @@ class _LoginDialogState extends State<_LoginDialog> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
               child: Row(children: [
-                Text('登录方式', style: t.textTheme.bodySmall),
+                Text(trGlobal('登录方式'), style: t.textTheme.bodySmall),
                 const SizedBox(width: 8),
                 SegmentedButton<LoginMethod>(
                   style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                  segments: const [ButtonSegment(value: LoginMethod.link, label: Text('microsoft.com/link')), ButtonSegment(value: LoginMethod.azure, label: Text('Azure 应用'))],
+                  segments: [ButtonSegment(value: LoginMethod.link, label: Text('microsoft.com/link')), ButtonSegment(value: LoginMethod.azure, label: Text(trGlobal('Azure 应用')))],
                   selected: {method},
                   onSelectionChanged: (s) {
                     method = s.first;
@@ -161,9 +163,9 @@ class _LoginDialogState extends State<_LoginDialog> {
     final cs = t.colorScheme;
     final c = code!;
     return Column(key: const ValueKey('code'), mainAxisSize: MainAxisSize.min, children: [
-      _StepRow(n: 1, text: '打开 ', link: 'microsoft.com/link', onTap: _open),
+      _StepRow(n: 1, text: trGlobal('打开 '), link: 'microsoft.com/link', onTap: _open),
       const SizedBox(height: 6),
-      const _StepRow(n: 2, text: '输入下面的代码并登录你的 Microsoft 账号'),
+      _StepRow(n: 2, text: trGlobal('输入下面的代码并登录你的 Microsoft 账号')),
       const SizedBox(height: 18),
       InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -193,7 +195,7 @@ class _LoginDialogState extends State<_LoginDialog> {
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(copied ? Icons.check_circle : Icons.content_copy, size: 14, color: copied ? Colors.green : t.hintColor),
           const SizedBox(width: 4),
-          Text(copied ? '代码已复制，直接粘贴即可' : '点击代码复制', style: t.textTheme.bodySmall),
+          Text(copied ? trGlobal('代码已复制，直接粘贴即可') : trGlobal('点击代码复制'), style: t.textTheme.bodySmall),
         ]),
       ),
       const SizedBox(height: 18),
@@ -202,7 +204,7 @@ class _LoginDialogState extends State<_LoginDialog> {
           child: FilledButton.icon(
             style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
             icon: const Icon(Icons.open_in_new, size: 18),
-            label: const Text('打开 microsoft.com/link'),
+            label: Text(trGlobal('打开 microsoft.com/link')),
             onPressed: _open,
           ),
         ),
@@ -212,7 +214,7 @@ class _LoginDialogState extends State<_LoginDialog> {
         const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
         const SizedBox(width: 8),
         Expanded(child: Text(step, style: t.textTheme.bodySmall)),
-        Text('${left ~/ 60}:${(left % 60).toString().padLeft(2, '0')} 后过期', style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
+        Text(trGlobal('{0}:{1} 后过期', [left ~/ 60, (left % 60).toString().padLeft(2, '0')]), style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
       ]),
     ]);
   }
@@ -225,7 +227,7 @@ class _LoginDialogState extends State<_LoginDialog> {
           const SizedBox(height: 16),
           Text(step, style: t.textTheme.titleSmall),
           const SizedBox(height: 4),
-          Text('浏览器中已完成授权，正在获取游戏档案', style: t.textTheme.bodySmall),
+          Text(trGlobal('浏览器中已完成授权，正在获取游戏档案'), style: t.textTheme.bodySmall),
         ]),
       );
 
@@ -237,7 +239,7 @@ class _LoginDialogState extends State<_LoginDialog> {
           const SizedBox(height: 12),
           Text(error!, textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          FilledButton.icon(icon: const Icon(Icons.refresh), label: const Text('重新获取代码'), onPressed: _start),
+          FilledButton.icon(icon: const Icon(Icons.refresh), label: Text(trGlobal('重新获取代码')), onPressed: _start),
         ]),
       );
 }

@@ -1,83 +1,226 @@
-"""Wraps every Chinese string literal used as UI text in the launcher with a translation call.
+"""Wraps every Chinese UI string literal in the launcher with `trGlobal('…')`.
 
-Rules:
-  * literal inside a widget build context → context.tr('…') (with {0} placeholders for interpolations)
-  * `const` widgets that contain a wrapped literal lose their `const`
-  * already wrapped strings (context.tr / translate / trGlobal) are left alone
-Writes tool/strings_zh.txt (one unique key per line) for the English table.
+Uses a small Dart string tokenizer (handles nested `${…}` with quotes inside, raw and triple
+strings, comments), so interpolations like `'${a ? 'x' : 'y'} 个'` are handled correctly.
+Interpolations become `{0}`, `{1}` placeholders; the template keeps the original quote style.
+
+`const` is removed from any const expression that ends up containing `trGlobal(`
+(declarations `const x = …` become `final`). Literals in imports, RegExp(…) and
+default-parameter positions are left alone (reported for manual handling).
+Writes tool/strings_zh.txt with the unique keys for the English table.
 """
-import re
 import glob
+import re
 from pathlib import Path
 
 CJK = re.compile(r'[一-鿿（-？、-】]')
-# single-quoted Dart string literal (no raw strings)
-LIT = re.compile(r"(?<![r\w])'((?:[^'\\\n]|\\.)*)'")
+
+
+class Lit:
+    def __init__(self, start, end, quote, parts):
+        self.start, self.end, self.quote = start, end, quote
+        # parts: list of ('text', str) | ('expr', str)  (expr is source text inside ${…} or $name)
+        self.parts = parts
+
+
+def scan(src):
+    """Yields top-level (non-nested) simple string literals with their parts."""
+    lits = []
+    i, n = 0, len(src)
+
+    def read_string(i):
+        """src[i] is the opening quote (possibly raw/triple handled by caller). Returns (end_index_after, parts)."""
+        q = src[i]
+        triple = src[i:i + 3] == q * 3
+        qs = q * 3 if triple else q
+        j = i + len(qs)
+        parts, buf = [], []
+        while j < n:
+            if src.startswith(qs, j):
+                if buf:
+                    parts.append(('text', ''.join(buf)))
+                return j + len(qs), parts, triple
+            c = src[j]
+            if c == '\\':
+                buf.append(src[j:j + 2])
+                j += 2
+                continue
+            if c == '$' and j + 1 < n and src[j + 1] == '{':
+                if buf:
+                    parts.append(('text', ''.join(buf)))
+                    buf = []
+                k = skip_expr(j + 2)
+                parts.append(('expr', src[j + 2:k]))
+                j = k + 1
+                continue
+            if c == '$' and j + 1 < n and (src[j + 1].isalpha() or src[j + 1] == '_'):
+                if buf:
+                    parts.append(('text', ''.join(buf)))
+                    buf = []
+                m = re.match(r'[A-Za-z_]\w*', src[j + 1:])
+                parts.append(('expr', m.group(0)))
+                j += 1 + len(m.group(0))
+                continue
+            buf.append(c)
+            j += 1
+        return n, parts, triple
+
+    def skip_raw(i):
+        q = src[i]
+        qs = q * 3 if src[i:i + 3] == q * 3 else q
+        j = src.find(qs, i + len(qs))
+        return n if j < 0 else j + len(qs)
+
+    def skip_expr(j):
+        """j points after '${'. Returns index of the matching '}'."""
+        depth = 1
+        while j < n:
+            c = src[j]
+            if c in '\'"':
+                j, _, _ = read_string(j)
+                continue
+            if c == '{':
+                depth += 1
+            elif c == '}':
+                depth -= 1
+                if depth == 0:
+                    return j
+            j += 1
+        return n
+
+    while i < n:
+        c = src[i]
+        if src.startswith('//', i):
+            e = src.find('\n', i)
+            i = n if e < 0 else e
+            continue
+        if src.startswith('/*', i):
+            e = src.find('*/', i + 2)
+            i = n if e < 0 else e + 2
+            continue
+        if c == 'r' and i + 1 < n and src[i + 1] in '\'"' and (i == 0 or not (src[i - 1].isalnum() or src[i - 1] == '_')):
+            i = skip_raw(i + 1)
+            continue
+        if c in '\'"':
+            end, parts, triple = read_string(i)
+            if not triple:
+                lits.append(Lit(i, end, c, parts))
+            i = end
+            continue
+        i += 1
+    return lits
+
+
+def line_of(src, pos):
+    s = src.rfind('\n', 0, pos) + 1
+    e = src.find('\n', pos)
+    return src[s:e if e >= 0 else len(src)]
+
+
+def context_before(src, pos, width=40):
+    return src[max(0, pos - width):pos]
+
 
 keys = []
+skipped = []
 
 
-def interp_to_template(lit):
-    """'共 ${a.length} 个 $b' → ('共 {0} 个 {1}', ['a.length', 'b'])"""
-    args = []
-    out = []
-    i = 0
-    while i < len(lit):
-        if lit[i] == '\\':
-            out.append(lit[i:i + 2]); i += 2; continue
-        if lit[i] == '$':
-            if i + 1 < len(lit) and lit[i + 1] == '{':
-                depth = 0; j = i + 1
-                while j < len(lit):
-                    if lit[j] == '{': depth += 1
-                    elif lit[j] == '}':
-                        depth -= 1
-                        if depth == 0: break
-                    j += 1
-                args.append(lit[i + 2:j]); out.append('{%d}' % (len(args) - 1)); i = j + 1; continue
-            m = re.match(r'\$([A-Za-z_]\w*)', lit[i:])
-            if m:
-                args.append(m.group(1)); out.append('{%d}' % (len(args) - 1)); i += len(m.group(0)); continue
-        out.append(lit[i]); i += 1
-    return ''.join(out), args
-
-
-SKIP_LINE = re.compile(r"(^\s*//|^\s*///|^import |context\.tr\(|translate\(|trGlobal\(|RegExp\(|\.replaceAll\(|throw |CmlException)")
-
-for f in glob.glob('lib/**/*.dart', recursive=True):
-    if 'i18n' in f:
-        continue
-    src = Path(f).read_text(encoding='utf-8')
-    lines = src.split('\n')
-    changed = False
-    for n, line in enumerate(lines):
-        if SKIP_LINE.search(line):
+def wrap_file(path):
+    src = Path(path).read_text(encoding='utf-8')
+    out, last = [], 0
+    for lit in scan(src):
+        text = ''.join(t for k, t in lit.parts if k == 'text')
+        if not CJK.search(text):
             continue
-        def sub(m):
-            global changed
-            lit = m.group(1)
-            if not CJK.search(lit):
-                return m.group(0)
-            tmpl, args = interp_to_template(lit)
-            keys.append(tmpl)
-            a = '' if not args else ', [' + ', '.join(args) + ']'
-            return "context.tr('%s'%s)" % (tmpl, a)
-        new = LIT.sub(sub, line)
-        if new != line:
-            lines[n] = new
-            changed = True
-    if changed:
-        s = '\n'.join(lines)
-        # drop const from expressions that now contain context.tr
-        for _ in range(6):
-            s = re.sub(r'\bconst\s+((?:[A-Z]\w*)(?:<[^>]*>)?(?:\.\w+)?\((?:[^()]|\([^()]*\))*context\.tr\()', r'\1', s)
-            s = re.sub(r'\bconst\s+(\[(?:[^\[\]]|\[[^\[\]]*\])*context\.tr\()', r'\1', s)
-        if "import '../i18n/i18n.dart';" not in s and "import 'i18n/i18n.dart';" not in s:
-            rel = "'i18n/i18n.dart'" if f.replace('\\', '/').count('/') == 1 else "'../i18n/i18n.dart'"
-            s = re.sub(r"(import 'package:flutter/material.dart';)", r"\1\n\nimport %s;" % rel, s, count=1)
-        Path(f).write_text(s, encoding='utf-8')
-        print('updated', f)
+        line = line_of(src, lit.start)
+        before = context_before(src, lit.start)
+        if line.lstrip().startswith('import ') or 'RegExp(' in before[-12:] or 'trGlobal(' in before[-10:]:
+            continue
+        # default parameter values must stay constant: `{String ok = '确定'}`
+        if re.search(r'[{,(]\s*\w[\w<>?]*\s+\w+\s*=\s*$', before) and re.search(r'^\s*[,}]', src[lit.end:lit.end + 5]):
+            skipped.append((path, line.strip()))
+            continue
+        tmpl, args = [], []
+        for k, t in lit.parts:
+            if k == 'text':
+                tmpl.append(t)
+            else:
+                args.append(t)
+                tmpl.append('{%d}' % (len(args) - 1))
+        tmpl = ''.join(tmpl)
+        q = lit.quote
+        if q == '"':
+            # normalise to single quotes for the key
+            tmpl = tmpl.replace("\\\"", '"').replace("'", "\\'")
+        keys.append(tmpl.replace("\\'", "'"))
+        call = "trGlobal('%s'%s)" % (tmpl, '' if not args else ', [' + ', '.join(args) + ']')
+        out.append(src[last:lit.start])
+        out.append(call)
+        last = lit.end
+    if not out:
+        return False
+    out.append(src[last:])
+    s = strip_const(''.join(out))
+    depth = path.replace('\\', '/').count('/') - 1
+    imp = "import '%si18n/i18n.dart';" % ('../' * depth)
+    if 'i18n/i18n.dart' not in s:
+        last_imp = list(re.finditer(r"^import 'package:[^']+';\n", s, re.M))
+        pos = last_imp[-1].end() if last_imp else 0
+        s = s[:pos] + '\n' + imp + '\n' + s[pos:]
+    Path(path).write_text(s, encoding='utf-8')
+    return True
 
-uniq = sorted(set(keys))
-Path('tool/strings_zh.txt').write_text('\n'.join(uniq), encoding='utf-8')
-print(len(keys), 'literals,', len(uniq), 'unique')
+
+def span_end(s, j):
+    depth, k = 0, j
+    lits = {l.start: l.end for l in scan(s[j:])}
+    while k < len(s):
+        if (k - j) in lits:
+            k = j + lits[k - j]
+            continue
+        c = s[k]
+        if c in '([{':
+            depth += 1
+        elif c in ')]}':
+            depth -= 1
+            if depth == 0:
+                return k
+        k += 1
+    return len(s) - 1
+
+
+CONST = re.compile(r'\bconst\s+')
+
+
+def strip_const(s):
+    while True:
+        changed = False
+        for m in CONST.finditer(s):
+            j = m.end()
+            while j < len(s) and s[j] not in '([{;,=':
+                j += 1
+            decl = j < len(s) and s[j] == '='
+            if decl:
+                j += 1
+                while j < len(s) and s[j] not in '([{;':
+                    j += 1
+            if j >= len(s) or s[j] == ';':
+                continue
+            end = span_end(s, j)
+            if 'trGlobal(' in s[m.end():end + 1]:
+                s = s[:m.start()] + ('final ' if decl else '') + s[m.end():]
+                changed = True
+                break
+        if not changed:
+            return s
+
+
+if __name__ == '__main__':
+    changed = [f for f in sorted(glob.glob('lib/**/*.dart', recursive=True)) if 'i18n' not in f and wrap_file(f)]
+    for f in changed:
+        print('updated', f)
+    uniq = sorted(set(keys))
+    Path('tool/strings_zh.txt').write_text('\n'.join(uniq), encoding='utf-8')
+    print(len(keys), 'literals,', len(uniq), 'unique')
+    for f, l in skipped:
+        print('SKIPPED default param:', f, l[:100])

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'i18n/i18n.dart';
+
 /// A selectable launcher theme.
 class CmlTheme {
   final String id;
@@ -11,19 +13,19 @@ class CmlTheme {
   const CmlTheme(this.id, this.name, this.seed, this.accent2);
 }
 
-const cmlThemes = <CmlTheme>[
-  CmlTheme('chtholly', '珂朵莉蓝', Color(0xFF4FA3D9), Color(0xFF7FD3C8)),
-  CmlTheme('flower', '七色花', Color(0xFF7C5CFF), Color(0xFFFF7AA2)),
-  CmlTheme('pcl', '经典蓝', Color(0xFF1370F3), Color(0xFF52A8FF)),
-  CmlTheme('grass', '草方块', Color(0xFF5DA130), Color(0xFFB8D86B)),
-  CmlTheme('nether', '下界', Color(0xFFB2362F), Color(0xFFF08A4B)),
-  CmlTheme('end', '末地', Color(0xFF8E6BBF), Color(0xFFE2D98B)),
-  CmlTheme('amethyst', '紫水晶', Color(0xFF9A5CC6), Color(0xFFD7A6FF)),
-  CmlTheme('gold', '金块', Color(0xFFE0A526), Color(0xFFFFD66B)),
-  CmlTheme('diamond', '钻石', Color(0xFF2CC6C1), Color(0xFF7BE8FF)),
-  CmlTheme('sakura', '樱花', Color(0xFFE88BAA), Color(0xFFFFC2D4)),
-  CmlTheme('redstone', '红石', Color(0xFFE53935), Color(0xFFFF8A65)),
-  CmlTheme('deepslate', '深板岩', Color(0xFF5E6B78), Color(0xFF9AA8B5)),
+List<CmlTheme> get cmlThemes => <CmlTheme>[
+  CmlTheme('chtholly', trGlobal('珂朵莉蓝'), Color(0xFF4FA3D9), Color(0xFF7FD3C8)),
+  CmlTheme('flower', trGlobal('七色花'), Color(0xFF7C5CFF), Color(0xFFFF7AA2)),
+  CmlTheme('pcl', trGlobal('经典蓝'), Color(0xFF1370F3), Color(0xFF52A8FF)),
+  CmlTheme('grass', trGlobal('草方块'), Color(0xFF5DA130), Color(0xFFB8D86B)),
+  CmlTheme('nether', trGlobal('下界'), Color(0xFFB2362F), Color(0xFFF08A4B)),
+  CmlTheme('end', trGlobal('末地'), Color(0xFF8E6BBF), Color(0xFFE2D98B)),
+  CmlTheme('amethyst', trGlobal('紫水晶'), Color(0xFF9A5CC6), Color(0xFFD7A6FF)),
+  CmlTheme('gold', trGlobal('金块'), Color(0xFFE0A526), Color(0xFFFFD66B)),
+  CmlTheme('diamond', trGlobal('钻石'), Color(0xFF2CC6C1), Color(0xFF7BE8FF)),
+  CmlTheme('sakura', trGlobal('樱花'), Color(0xFFE88BAA), Color(0xFFFFC2D4)),
+  CmlTheme('redstone', trGlobal('红石'), Color(0xFFE53935), Color(0xFFFF8A65)),
+  CmlTheme('deepslate', trGlobal('深板岩'), Color(0xFF5E6B78), Color(0xFF9AA8B5)),
 ];
 
 CmlTheme themeById(String id) => cmlThemes.firstWhere((t) => t.id == id, orElse: () => cmlThemes.first);

@@ -2,6 +2,8 @@ import 'package:cml_core/cml_core.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
+import '../i18n/i18n.dart';
+
 import '../state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -26,7 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
   final scroll = ScrollController();
   final _keys = List.generate(7, (_) => GlobalKey());
   int railIndex = 0;
-  static const _names = ['Java', '内存', '游戏', '下载', '账号', '外观', '启动器'];
+  static List<String> get _names => ['Java', trGlobal('内存'), trGlobal('游戏'), trGlobal('下载'), trGlobal('账号'), trGlobal('外观'), trGlobal('启动器')];
   static const _icons = [Icons.coffee_outlined, Icons.memory_rounded, Icons.sports_esports_outlined, Icons.download_outlined, Icons.account_circle_outlined, Icons.palette_outlined, Icons.rocket_launch_outlined];
 
   List<Widget> _spaced(List<Widget> w) => [for (var i = 0; i < w.length; i++) ...[if (i > 0) const SizedBox(height: 18), w[i]]];
@@ -102,7 +104,7 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton.icon(
             icon: scanning ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.search, size: 16),
-            label: const Text('自动扫描'),
+            label: Text(trGlobal('自动扫描')),
             onPressed: scanning
                 ? null
                 : () async {
@@ -114,24 +116,24 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           TextButton.icon(
             icon: const Icon(Icons.add, size: 16),
-            label: const Text('手动添加'),
+            label: Text(trGlobal('手动添加')),
             onPressed: () async {
               final f = await openFile(acceptedTypeGroups: const [XTypeGroup(label: 'java.exe', extensions: ['exe'])]);
               if (f == null) return;
               final j = await app.ctx.java.addManual(f.path);
               if (!context.mounted) return;
-              j == null ? toast(context, '这不是有效的 Java', error: true) : app.changed();
+              j == null ? toast(context, trGlobal('这不是有效的 Java'), error: true) : app.changed();
             },
           ),
         ],
         child: Column(children: [
           FieldRow(
-            '使用的 Java',
+            trGlobal('使用的 Java'),
             DropdownButton<String?>(
               isExpanded: true,
               value: app.ctx.java.installs.any((j) => j.path == s.javaPath) ? s.javaPath : null,
               items: [
-                const DropdownMenuItem(value: null, child: Text('自动选择（按游戏版本挑选合适的 Java，缺少时自动下载）')),
+                DropdownMenuItem(value: null, child: Text(trGlobal('自动选择（按游戏版本挑选合适的 Java，缺少时自动下载）'))),
                 for (final j in app.ctx.java.installs) DropdownMenuItem(value: j.path, child: Text('${j.label}   ${j.path}', overflow: TextOverflow.ellipsis)),
               ],
               onChanged: (v) {
@@ -154,16 +156,16 @@ class _SettingsPageState extends State<SettingsPage> {
       )),
       // ---------------- memory ----------------
       KeyedSubtree(key: _keys[1], child: Section(
-        title: '内存',
+        title: trGlobal('内存'),
         icon: Icons.memory_rounded,
         child: Column(children: [
-          SwitchRow('自动分配内存', s.autoMemory, (v) {
+          SwitchRow(trGlobal('自动分配内存'), s.autoMemory, (v) {
             setState(() => s.autoMemory = v);
             app.saveSettings();
-          }, help: '根据 Mod 数量、游戏版本和当前空闲内存自动决定，并给系统保留余量'),
+          }, help: trGlobal('根据 Mod 数量、游戏版本和当前空闲内存自动决定，并给系统保留余量')),
           if (!s.autoMemory)
             FieldRow(
-              '最大内存',
+              trGlobal('最大内存'),
               Row(children: [
                 Expanded(
                   child: Slider(
@@ -179,8 +181,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 SizedBox(width: 90, child: Text('${s.memoryMb} MB')),
               ]),
             ),
-          FieldRow('物理内存', Text('共 ${(mem.totalMb / 1024).toStringAsFixed(1)} GB，当前可用 ${(mem.availableMb / 1024).toStringAsFixed(1)} GB')),
-          SwitchRow('启动前优化内存', s.optimizeMemoryBeforeLaunch, (v) {
+          FieldRow(trGlobal('物理内存'), Text(trGlobal('共 {0} GB，当前可用 {1} GB', [(mem.totalMb / 1024).toStringAsFixed(1), (mem.availableMb / 1024).toStringAsFixed(1)]))),
+          SwitchRow(trGlobal('启动前优化内存'), s.optimizeMemoryBeforeLaunch, (v) {
             setState(() => s.optimizeMemoryBeforeLaunch = v);
             app.saveSettings();
           }),
@@ -188,19 +190,19 @@ class _SettingsPageState extends State<SettingsPage> {
       )),
       // ---------------- game ----------------
       KeyedSubtree(key: _keys[2], child: Section(
-        title: '游戏',
+        title: trGlobal('游戏'),
         icon: Icons.sports_esports_outlined,
         child: Column(children: [
-          SwitchRow('版本隔离', s.isolateVersions, (v) {
+          SwitchRow(trGlobal('版本隔离'), s.isolateVersions, (v) {
             setState(() => s.isolateVersions = v);
             app.saveSettings();
-          }, help: '每个版本使用独立的 mods、存档、配置文件夹，互不影响'),
+          }, help: trGlobal('每个版本使用独立的 mods、存档、配置文件夹，互不影响')),
           FieldRow(
-            '窗口大小',
+            trGlobal('窗口大小'),
             Row(children: [
-              SizedBox(width: 90, child: TextField(controller: width, decoration: const InputDecoration(hintText: '宽'), onEditingComplete: _save)),
+              SizedBox(width: 90, child: TextField(controller: width, decoration: InputDecoration(hintText: trGlobal('宽')), onEditingComplete: _save)),
               const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('×')),
-              SizedBox(width: 90, child: TextField(controller: height, decoration: const InputDecoration(hintText: '高'), onEditingComplete: _save)),
+              SizedBox(width: 90, child: TextField(controller: height, decoration: InputDecoration(hintText: trGlobal('高')), onEditingComplete: _save)),
               const SizedBox(width: 16),
               Checkbox(
                 value: s.fullscreen,
@@ -209,17 +211,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   app.saveSettings();
                 },
               ),
-              const Text('全屏'),
+              Text(trGlobal('全屏')),
             ]),
           ),
           FieldRow(
-            '启动后启动器',
+            trGlobal('启动后启动器'),
             DropdownButton<int>(
               value: s.afterLaunch,
-              items: const [
-                DropdownMenuItem(value: 0, child: Text('保持不变')),
-                DropdownMenuItem(value: 1, child: Text('最小化')),
-                DropdownMenuItem(value: 2, child: Text('关闭')),
+              items: [
+                DropdownMenuItem(value: 0, child: Text(trGlobal('保持不变'))),
+                DropdownMenuItem(value: 1, child: Text(trGlobal('最小化'))),
+                DropdownMenuItem(value: 2, child: Text(trGlobal('关闭'))),
               ],
               onChanged: (v) {
                 setState(() => s.afterLaunch = v!);
@@ -227,21 +229,21 @@ class _SettingsPageState extends State<SettingsPage> {
               },
             ),
           ),
-          FieldRow('JVM 参数', TextField(controller: jvm, onEditingComplete: _save, decoration: const InputDecoration(hintText: '附加在默认参数之后'))),
-          FieldRow('游戏参数', TextField(controller: game, onEditingComplete: _save)),
-          FieldRow('启动前执行命令', TextField(controller: pre, onEditingComplete: _save)),
+          FieldRow(trGlobal('JVM 参数'), TextField(controller: jvm, onEditingComplete: _save, decoration: InputDecoration(hintText: trGlobal('附加在默认参数之后')))),
+          FieldRow(trGlobal('游戏参数'), TextField(controller: game, onEditingComplete: _save)),
+          FieldRow(trGlobal('启动前执行命令'), TextField(controller: pre, onEditingComplete: _save)),
         ]),
       )),
       // ---------------- downloads ----------------
       KeyedSubtree(key: _keys[3], child: Section(
-        title: '下载',
+        title: trGlobal('下载'),
         icon: Icons.download_outlined,
         child: Column(children: [
           FieldRow(
-            '游戏文件下载源',
+            trGlobal('游戏文件下载源'),
             DropdownButton<DownloadSource>(
               value: s.downloadSource,
-              items: [for (final d in DownloadSource.values) DropdownMenuItem(value: d, child: Text(d.label))],
+              items: [for (final d in DownloadSource.values) DropdownMenuItem(value: d, child: Text(trCore(d.label)))],
               onChanged: (v) {
                 setState(() => s.downloadSource = v!);
                 app.saveSettings();
@@ -249,10 +251,10 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           FieldRow(
-            'Mod / 资源下载源',
+            trGlobal('Mod / 资源下载源'),
             DropdownButton<ContentSource>(
               value: s.contentSource,
-              items: [for (final d in ContentSource.values) DropdownMenuItem(value: d, child: Text(d.label))],
+              items: [for (final d in ContentSource.values) DropdownMenuItem(value: d, child: Text(trCore(d.label)))],
               onChanged: (v) {
                 setState(() => s.contentSource = v!);
                 app.saveSettings();
@@ -260,7 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           FieldRow(
-            '下载线程数',
+            trGlobal('下载线程数'),
             Row(children: [
               Expanded(
                 child: Slider(
@@ -276,37 +278,51 @@ class _SettingsPageState extends State<SettingsPage> {
               SizedBox(width: 40, child: Text('${s.downloadThreads}')),
             ]),
           ),
-          FieldRow('CurseForge API Key', TextField(controller: cfKey, obscureText: true, onEditingComplete: _save, decoration: const InputDecoration(hintText: '使用官方 CurseForge API 时需要'))),
-          FieldRow('GitHub 加速前缀', TextField(controller: ghMirror, onEditingComplete: _save, decoration: const InputDecoration(hintText: '例如 https://ghfast.top/（留空直连）')),
-              help: '用于下载 Chunker、mihomo、CML 更新等 GitHub 文件'),
+          FieldRow('CurseForge API Key', TextField(controller: cfKey, obscureText: true, onEditingComplete: _save, decoration: InputDecoration(hintText: trGlobal('使用官方 CurseForge API 时需要')))),
+          FieldRow(trGlobal('GitHub 加速前缀'), TextField(controller: ghMirror, onEditingComplete: _save, decoration: InputDecoration(hintText: trGlobal('例如 https://ghfast.top/（留空直连）'))),
+              help: trGlobal('用于下载 Chunker、mihomo、CML 更新等 GitHub 文件')),
         ]),
       )),
       // ---------------- account ----------------
       KeyedSubtree(key: _keys[4], child: Section(
-        title: '账号',
+        title: trGlobal('账号'),
         icon: Icons.account_circle_outlined,
         child: Column(children: [
-          SwitchRow('正版登录时验证 SSL 证书', s.verifyLoginSsl, (v) async {
-            if (!v && !await confirm(context, '关闭证书验证', '关闭后登录请求可能被中间人截获。仅在公司/校园网络的代理导致登录失败时临时关闭。', danger: true, ok: '仍然关闭')) return;
+          SwitchRow(trGlobal('正版登录时验证 SSL 证书'), s.verifyLoginSsl, (v) async {
+            if (!v && !await confirm(context, trGlobal('关闭证书验证'), trGlobal('关闭后登录请求可能被中间人截获。仅在公司/校园网络的代理导致登录失败时临时关闭。'), danger: true, ok: trGlobal('仍然关闭'))) return;
             setState(() => s.verifyLoginSsl = v);
             app.saveSettings();
           }),
-          FieldRow('Azure 应用 ID', TextField(controller: clientId, onEditingComplete: _save, decoration: InputDecoration(hintText: MsaConfig.builtInClientId.isEmpty ? '必须填写（已获 Mojang 批准的应用）' : '留空使用内置 ID')),
-              help: '微软登录需要一个经过 Mojang 审核的 Azure 应用 ID（aka.ms/mce-reviewappid）'),
+          FieldRow(trGlobal('Azure 应用 ID'), TextField(controller: clientId, onEditingComplete: _save, decoration: InputDecoration(hintText: MsaConfig.builtInClientId.isEmpty ? trGlobal('必须填写（已获 Mojang 批准的应用）') : trGlobal('留空使用内置 ID'))),
+              help: trGlobal('微软登录需要一个经过 Mojang 审核的 Azure 应用 ID（aka.ms/mce-reviewappid）')),
         ]),
       )),
       // ---------------- appearance ----------------
       KeyedSubtree(key: _keys[5], child: Section(
-        title: '外观',
+        title: trGlobal('外观'),
         icon: Icons.palette_outlined,
         child: Column(children: [
           FieldRow(
-            '主题',
+            'Language / 语言',
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SegmentedButton<AppLanguage>(
+                segments: [for (final l in AppLanguage.values) ButtonSegment(value: l, label: Text(l.label))],
+                selected: {AppLanguage.fromCode(s.language)},
+                onSelectionChanged: (v) {
+                  s.language = v.first.code;
+                  app.saveSettings();
+                },
+              ),
+            ),
+          ),
+          FieldRow(
+            trGlobal('主题'),
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final th in cmlThemes)
                 ChoiceChip(
                   avatar: CircleAvatar(backgroundColor: th.seed, radius: 8),
-                  label: Text(th.name),
+                  label: Text(trCore(th.name)),
                   selected: s.theme == th.id,
                   onSelected: (_) {
                     s.theme = th.id;
@@ -316,12 +332,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
             ]),
           ),
-          SwitchRow('深色模式', s.darkMode, (v) {
+          SwitchRow(trGlobal('深色模式'), s.darkMode, (v) {
             s.darkMode = v;
             app.saveSettings();
           }),
           FieldRow(
-            '界面缩放',
+            trGlobal('界面缩放'),
             Row(children: [
               Expanded(
                 child: Slider(
@@ -338,17 +354,17 @@ class _SettingsPageState extends State<SettingsPage> {
             ]),
           ),
           FieldRow(
-            '背景图片',
+            trGlobal('背景图片'),
             Row(children: [
-              Expanded(child: Text(s.backgroundImage.isEmpty ? '无' : s.backgroundImage, overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text(s.backgroundImage.isEmpty ? trGlobal('无') : s.backgroundImage, overflow: TextOverflow.ellipsis)),
               TextButton(
                 onPressed: () async {
-                  final f = await openFile(acceptedTypeGroups: const [XTypeGroup(label: '图片', extensions: ['png', 'jpg', 'jpeg', 'webp'])]);
+                  final f = await openFile(acceptedTypeGroups: [XTypeGroup(label: trGlobal('图片'), extensions: ['png', 'jpg', 'jpeg', 'webp'])]);
                   if (f == null) return;
                   s.backgroundImage = f.path;
                   app.saveSettings();
                 },
-                child: const Text('选择'),
+                child: Text(trGlobal('选择')),
               ),
               if (s.backgroundImage.isNotEmpty)
                 TextButton(
@@ -356,7 +372,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     s.backgroundImage = '';
                     app.saveSettings();
                   },
-                  child: const Text('清除'),
+                  child: Text(trGlobal('清除')),
                 ),
             ]),
           ),
@@ -364,19 +380,19 @@ class _SettingsPageState extends State<SettingsPage> {
       )),
       // ---------------- launcher ----------------
       KeyedSubtree(key: _keys[6], child: Section(
-        title: '启动器',
+        title: trGlobal('启动器'),
         icon: Icons.rocket_launch_outlined,
         child: Column(children: [
-          SwitchRow('自动更新启动器', s.autoUpdate, (v) {
+          SwitchRow(trGlobal('自动更新启动器'), s.autoUpdate, (v) {
             setState(() => s.autoUpdate = v);
             app.saveSettings();
           }),
-          SwitchRow('自动更新内置工具', s.autoUpdateTools, (v) {
+          SwitchRow(trGlobal('自动更新内置工具'), s.autoUpdateTools, (v) {
             setState(() => s.autoUpdateTools = v);
             app.saveSettings();
-          }, help: 'mihomo 内核与 Chunker 会在启动时检查 GitHub 新版本'),
+          }, help: trGlobal('mihomo 内核与 Chunker 会在启动时检查 GitHub 新版本')),
           FieldRow(
-            '当前版本',
+            trGlobal('当前版本'),
             Row(children: [
               Text('CML ${SelfUpdater.currentVersion}'),
               const SizedBox(width: 12),
@@ -385,20 +401,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   try {
                     final r = await app.ctx.updater.checkUpdate();
                     if (!context.mounted) return;
-                    if (r == null) return toast(context, '已是最新版本');
-                    if (await confirm(context, '发现新版本 ${r.tag}', r.body.isEmpty ? '是否更新？' : r.body, ok: '更新并重启')) {
-                      await app.runTask('更新 CML', (t) => app.ctx.updater.update(release: r, task: t));
+                    if (r == null) return toast(context, trGlobal('已是最新版本'));
+                    if (await confirm(context, trGlobal('发现新版本 {0}', [r.tag]), r.body.isEmpty ? trGlobal('是否更新？') : r.body, ok: trGlobal('更新并重启'))) {
+                      await app.runTask(trGlobal('更新 CML'), (t) => app.ctx.updater.update(release: r, task: t));
                       await app.ctx.updater.applyAndRestart();
                     }
                   } catch (e) {
                     if (context.mounted) toast(context, errText(e), error: true);
                   }
                 },
-                child: const Text('检查更新'),
+                child: Text(trGlobal('检查更新')),
               ),
             ]),
           ),
-          FieldRow('数据目录', Text(Os.cmlHome)),
+          FieldRow(trGlobal('数据目录'), Text(Os.cmlHome)),
         ]),
       )),
 ]),
@@ -481,8 +497,8 @@ class _JavaCard extends StatelessWidget {
             Row(children: [
               Flexible(child: Text('${java.vendor} ${java.version}', style: const TextStyle(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 6),
-              if (!java.is64Bit) const Pill('32 位', color: Colors.red),
-              if (java.manual) const Pill('手动', color: Colors.grey),
+              if (!java.is64Bit) Pill(trGlobal('32 位'), color: Colors.red),
+              if (java.manual) Pill(trGlobal('手动'), color: Colors.grey),
             ]),
             Text(java.path, style: t.textTheme.bodySmall?.copyWith(color: t.hintColor), maxLines: 1, overflow: TextOverflow.ellipsis),
           ]),

@@ -5,6 +5,8 @@ import 'package:cml_core/cml_core.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'i18n/i18n.dart';
+
 import 'pages/download_page.dart';
 import 'pages/home_page.dart';
 import 'pages/multiplayer_page.dart';
@@ -59,14 +61,24 @@ class CmlApp extends StatelessWidget {
     final s = app.settings;
     final theme = themeById(s.theme);
     final accent = s.accentColor == null ? null : Color(s.accentColor!);
-    return MaterialApp(
-      title: 'CML',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(theme, dark: false, accent: accent),
-      darkTheme: buildTheme(theme, dark: true, accent: accent),
-      themeMode: s.darkMode ? ThemeMode.dark : ThemeMode.light,
-      builder: (c, child) => MediaQuery(data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(s.uiScale)), child: child!),
-      home: app.ready ? const Shell() : const Scaffold(body: Center(child: CircularProgressIndicator())),
+    final lang = AppLanguage.fromCode(s.language);
+    currentLanguage = lang;
+    // KeyedSubtree forces a full rebuild on language change: some strings live in
+    // State fields and const-free lists that only re-read trGlobal when rebuilt.
+    return KeyedSubtree(
+      key: ValueKey(lang),
+      child: I18n(
+        language: lang,
+        child: MaterialApp(
+          title: 'CML',
+          debugShowCheckedModeBanner: false,
+          theme: buildTheme(theme, dark: false, accent: accent),
+          darkTheme: buildTheme(theme, dark: true, accent: accent),
+          themeMode: s.darkMode ? ThemeMode.dark : ThemeMode.light,
+          builder: (c, child) => MediaQuery(data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(s.uiScale)), child: child!),
+          home: app.ready ? const Shell() : const Scaffold(body: Center(child: CircularProgressIndicator())),
+        ),
+      ),
     );
   }
 }
@@ -87,41 +99,47 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
-  int index = _startPage.clamp(0, _dests.length - 1);
+  /// Survives the full rebuild done on language change.
+  static int? _keptIndex;
+  int _index = (_keptIndex ?? _startPage).clamp(0, _dests.length - 1);
+  int get index => _index;
+  set index(int v) => _index = _keptIndex = v;
 
-  static final _dests = <_Dest>[
-    _Dest('启动', Icons.rocket_launch_outlined, Icons.rocket_launch, '选择版本，开始游戏', () => const HomePage()),
-    _Dest('版本', Icons.layers_outlined, Icons.layers, '管理已安装的版本、Mod、资源包与光影', () => const VersionsPage()),
-    _Dest('下载', Icons.download_outlined, Icons.download, '游戏、加载器、Mod、整合包、光影、资源包、数据包与 Java', () => const DownloadPage()),
-    _Dest('存档', Icons.public_outlined, Icons.public, 'Java 版与基岩版存档管理、备份与转换', () => const SavesPage()),
-    _Dest('联机', Icons.hub_outlined, Icons.hub, '通过 CMLS 服务器安全地与朋友联机', () => const MultiplayerPage()),
-    _Dest('商店游戏', Icons.sports_esports_outlined, Icons.sports_esports, '基岩版、Legends、Dungeons 一键启动', () => const StoreGamesPage()),
-    _Dest('皮肤', Icons.face_retouching_natural_outlined, Icons.face_retouching_natural, '绘制皮肤、3D 预览、上传与披风切换', () => const SkinPage()),
-    _Dest('工具箱', Icons.handyman_outlined, Icons.handyman, '建筑文件转换、资源包转换、存档转换与内存优化', () => const ToolsPage()),
-    _Dest('网络代理', Icons.shield_outlined, Icons.shield, '内置 Clash Verge 代理（mihomo 内核）', () => const ProxyPage()),
-    _Dest('设置', Icons.tune_outlined, Icons.tune, 'Java、内存、下载源、账号与外观', () => const SettingsPage()),
+  static List<_Dest> get _dests => <_Dest>[
+    _Dest(trGlobal('启动'), Icons.rocket_launch_outlined, Icons.rocket_launch, trGlobal('选择版本，开始游戏'), () => const HomePage()),
+    _Dest(trGlobal('版本'), Icons.layers_outlined, Icons.layers, trGlobal('管理已安装的版本、Mod、资源包与光影'), () => const VersionsPage()),
+    _Dest(trGlobal('下载'), Icons.download_outlined, Icons.download, trGlobal('游戏、加载器、Mod、整合包、光影、资源包、数据包与 Java'), () => const DownloadPage()),
+    _Dest(trGlobal('存档'), Icons.public_outlined, Icons.public, trGlobal('Java 版与基岩版存档管理、备份与转换'), () => const SavesPage()),
+    _Dest(trGlobal('联机'), Icons.hub_outlined, Icons.hub, trGlobal('通过 CMLS 服务器安全地与朋友联机'), () => const MultiplayerPage()),
+    _Dest(trGlobal('商店游戏'), Icons.sports_esports_outlined, Icons.sports_esports, trGlobal('基岩版、Legends、Dungeons 一键启动'), () => const StoreGamesPage()),
+    _Dest(trGlobal('皮肤'), Icons.face_retouching_natural_outlined, Icons.face_retouching_natural, trGlobal('绘制皮肤、3D 预览、上传与披风切换'), () => const SkinPage()),
+    _Dest(trGlobal('工具箱'), Icons.handyman_outlined, Icons.handyman, trGlobal('建筑文件转换、资源包转换、存档转换与内存优化'), () => const ToolsPage()),
+    _Dest(trGlobal('网络代理'), Icons.shield_outlined, Icons.shield, trGlobal('内置 Clash Verge 代理（mihomo 内核）'), () => const ProxyPage()),
+    _Dest(trGlobal('设置'), Icons.tune_outlined, Icons.tune, trGlobal('Java、内存、下载源、账号与外观'), () => const SettingsPage()),
   ];
 
   /// Group headings shown above these indices in the sidebar.
-  static const _groups = {0: '游戏', 5: '扩展', 8: '系统'};
+  static Map<int, String> get _groups => {0: trGlobal('游戏'), 5: trGlobal('扩展'), 8: trGlobal('系统')};
 
   @override
   void initState() {
     super.initState();
+    if (_keptIndex != null) return; // rebuilt after a language switch: startup already done
+    _keptIndex = _index;
     WidgetsBinding.instance.addPostFrameCallback((_) => _startupChecks());
   }
 
   Future<void> _startupChecks() async {
     final app = App.read(context);
     if (_openLogin) unawaited(showLoginDialog(context));
-    if (app.initError != null) toast(context, '初始化出错：${app.initError}', error: true);
+    if (app.initError != null) toast(context, trGlobal('初始化出错：{0}', [app.initError]), error: true);
     if (app.settings.autoUpdate) {
       try {
         final r = await app.ctx.updater.checkUpdate();
         if (r != null && mounted) {
-          final ok = await confirm(context, '发现新版本 ${r.tag}', r.body.isEmpty ? '是否现在更新 CML？' : r.body, ok: '更新并重启');
+          final ok = await confirm(context, trGlobal('发现新版本 {0}', [r.tag]), r.body.isEmpty ? trGlobal('是否现在更新 CML？') : r.body, ok: trGlobal('更新并重启'));
           if (ok && mounted) {
-            await app.runTask('更新 CML ${r.tag}', (t) => app.ctx.updater.update(release: r, task: t), onError: (e) => toast(context, errText(e), error: true));
+            await app.runTask(trGlobal('更新 CML {0}', [r.tag]), (t) => app.ctx.updater.update(release: r, task: t), onError: (e) => toast(context, errText(e), error: true));
             await app.ctx.updater.applyAndRestart();
           }
         }
@@ -134,7 +152,7 @@ class _ShellState extends State<Shell> {
         try {
           if (await c.installedVersion() == null) continue; // only keep installed tools fresh
           final r = await c.checkUpdate();
-          if (r != null) await app.runTask('更新 ${c.displayName} ${r.tag}', (t) => c.update(release: r, task: t));
+          if (r != null) await app.runTask(trGlobal('更新 {0} {1}', [c.displayName, r.tag]), (t) => c.update(release: r, task: t));
         } catch (_) {}
       }
     }
@@ -224,7 +242,7 @@ class _ShellState extends State<Shell> {
                       ),
                       _HeaderAction(
                         icon: app.settings.darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                        tooltip: app.settings.darkMode ? '切换到浅色' : '切换到深色',
+                        tooltip: app.settings.darkMode ? trGlobal('切换到浅色') : trGlobal('切换到深色'),
                         onTap: () {
                           app.settings.darkMode = !app.settings.darkMode;
                           app.saveSettings();
@@ -233,7 +251,7 @@ class _ShellState extends State<Shell> {
                       const SizedBox(width: 6),
                       _HeaderAction(
                         icon: Icons.download_for_offline_outlined,
-                        tooltip: '任务',
+                        tooltip: trGlobal('任务'),
                         badge: app.activeTasks,
                         onTap: () => showDialog(context: context, builder: (_) => const TaskListDialog()),
                       ),
@@ -366,8 +384,8 @@ class _AccountChip extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(a?.name ?? '未登录', style: const TextStyle(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(a == null ? '点击登录 Microsoft 账号' : 'v${SelfUpdater.currentVersion} · 正版', style: t.textTheme.labelSmall?.copyWith(color: t.hintColor), maxLines: 1),
+                  Text(a?.name ?? trGlobal('未登录'), style: const TextStyle(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(a == null ? trGlobal('点击登录 Microsoft 账号') : trGlobal('v{0} · 正版', [SelfUpdater.currentVersion]), style: t.textTheme.labelSmall?.copyWith(color: t.hintColor), maxLines: 1),
                 ]),
               ),
             ]),
@@ -391,7 +409,7 @@ class TaskCenterButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: OutlinedButton.icon(
         icon: n > 0 ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.task_alt, size: 16),
-        label: Text(n > 0 ? '$n 个任务进行中' : '任务已完成'),
+        label: Text(n > 0 ? trGlobal('{0} 个任务进行中', [n]) : trGlobal('任务已完成')),
         onPressed: () => showDialog(context: context, builder: (_) => const TaskListDialog()),
       ),
     );
@@ -405,11 +423,11 @@ class TaskListDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = App.of(context);
     return AlertDialog(
-      title: const Text('任务'),
+      title: Text(trGlobal('任务')),
       content: SizedBox(
         width: 560,
         child: app.tasks.isEmpty
-            ? const Text('没有任务')
+            ? Text(trGlobal('没有任务'))
             : ListView(
                 shrinkWrap: true,
                 children: [
@@ -422,21 +440,21 @@ class TaskListDialog extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           switch (t.state) {
-                            TaskState.failed => '失败：${errText(t.error!)}',
-                            TaskState.cancelled => '已取消',
-                            TaskState.done => '完成',
-                            _ => '${t.detail}${t.bytesPerSecond > 0 ? '  ${fmtBytes(t.bytesPerSecond)}/s' : ''}',
+                            TaskState.failed => trGlobal('失败：{0}', [errText(t.error!)]),
+                            TaskState.cancelled => trGlobal('已取消'),
+                            TaskState.done => trGlobal('完成'),
+                            _ => '${trCore(t.detail)}${t.bytesPerSecond > 0 ? '  ${fmtBytes(t.bytesPerSecond)}/s' : ''}',
                           },
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ]),
-                      trailing: t.state == TaskState.running ? IconButton(icon: const Icon(Icons.close), tooltip: '取消', onPressed: t.cancel.cancel) : null,
+                      trailing: t.state == TaskState.running ? IconButton(icon: const Icon(Icons.close), tooltip: trGlobal('取消'), onPressed: t.cancel.cancel) : null,
                     ),
                 ],
               ),
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(trGlobal('关闭')))],
     );
   }
 }

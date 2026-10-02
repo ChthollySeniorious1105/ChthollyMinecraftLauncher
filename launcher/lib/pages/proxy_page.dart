@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cml_core/cml_core.dart';
 import 'package:flutter/material.dart';
 
+import '../i18n/i18n.dart';
+
 import '../state.dart';
 import '../widgets/common.dart';
 
@@ -63,7 +65,7 @@ class _ProxyPageState extends State<ProxyPage> {
         groups = [];
       } else {
         if (!proxy.core.installed) {
-          await app.runTask('下载 mihomo 内核', (t) => proxy.core.update(task: t));
+          await app.runTask(trGlobal('下载 mihomo 内核'), (t) => proxy.core.update(task: t));
           coreVersion = await proxy.core.installedVersion();
         }
         await proxy.start();
@@ -78,12 +80,12 @@ class _ProxyPageState extends State<ProxyPage> {
   }
 
   Future<void> _addSub() async {
-    final url = await prompt(context, '订阅链接', hint: 'https://…（Clash / Mihomo 格式）');
+    final url = await prompt(context, trGlobal('订阅链接'), hint: trGlobal('https://…（Clash / Mihomo 格式）'));
     if (url == null || url.trim().isEmpty || !mounted) return;
-    final name = await prompt(context, '订阅名称', initial: Uri.tryParse(url.trim())?.host ?? '订阅');
+    final name = await prompt(context, trGlobal('订阅名称'), initial: Uri.tryParse(url.trim())?.host ?? trGlobal('订阅'));
     if (name == null || name.trim().isEmpty || !mounted) return;
     final app = App.read(context);
-    await app.runTask('导入订阅 ${name.trim()}', (_) => proxy.addSubscription(name.trim(), url.trim()), onError: (e) => toast(context, errText(e), error: true));
+    await app.runTask(trGlobal('导入订阅 {0}', [name.trim()]), (_) => proxy.addSubscription(name.trim(), url.trim()), onError: (e) => toast(context, errText(e), error: true));
     if (mounted) setState(() {});
   }
 
@@ -103,20 +105,20 @@ class _ProxyPageState extends State<ProxyPage> {
     final t = Theme.of(context);
     return PageBody(children: [
       Section(
-        title: '代理',
+        title: trGlobal('代理'),
         icon: Icons.shield_outlined,
         actions: [
           Text('mihomo ${coreVersion ?? '未下载'}', style: t.textTheme.bodySmall),
           TextButton(
             onPressed: () async {
-              await app.runTask('更新 mihomo 内核', (tk) async {
+              await app.runTask(trGlobal('更新 mihomo 内核'), (tk) async {
                 final r = await proxy.core.checkUpdate();
                 if (r != null) await proxy.core.update(release: r, task: tk);
               }, onError: (e) => toast(context, errText(e), error: true));
               coreVersion = await proxy.core.installedVersion();
               if (mounted) setState(() {});
             },
-            child: const Text('检查内核更新'),
+            child: Text(trGlobal('检查内核更新')),
           ),
         ],
         child: Column(children: [
@@ -125,12 +127,12 @@ class _ProxyPageState extends State<ProxyPage> {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(proxy.running ? '运行中 · ${proxy.proxyAddress}' : '未运行', style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(proxy.running ? trGlobal('运行中 · {0}', [proxy.proxyAddress]) : trGlobal('未运行'), style: const TextStyle(fontWeight: FontWeight.w600)),
                 if (proxy.running) Text('↑ ${fmtBytes(speed.$1)}/s   ↓ ${fmtBytes(speed.$2)}/s', style: t.textTheme.bodySmall),
               ]),
             ),
             SegmentedButton<ProxyMode>(
-              segments: [for (final m in ProxyMode.values) ButtonSegment(value: m, label: Text(m.label))],
+              segments: [for (final m in ProxyMode.values) ButtonSegment(value: m, label: Text(trCore(m.label)))],
               selected: {s.mode},
               onSelectionChanged: (v) async {
                 await proxy.setMode(v.first);
@@ -138,14 +140,14 @@ class _ProxyPageState extends State<ProxyPage> {
               },
             ),
             const SizedBox(width: 12),
-            FilledButton(onPressed: busy ? null : _toggle, child: Text(proxy.running ? '停止' : '启动')),
+            FilledButton(onPressed: busy ? null : _toggle, child: Text(proxy.running ? trGlobal('停止') : trGlobal('启动'))),
           ]),
           const SizedBox(height: 8),
           Row(children: [
             Expanded(
               child: SwitchListTile(
                 dense: true,
-                title: const Text('系统代理'),
+                title: Text(trGlobal('系统代理')),
                 value: s.systemProxy,
                 onChanged: (v) async {
                   await proxy.setSystemProxy(v);
@@ -156,7 +158,7 @@ class _ProxyPageState extends State<ProxyPage> {
             Expanded(
               child: SwitchListTile(
                 dense: true,
-                title: const Text('启动器下载走代理'),
+                title: Text(trGlobal('启动器下载走代理')),
                 value: app.settings.useBuiltInProxy,
                 onChanged: (v) {
                   app.settings.useBuiltInProxy = v;
@@ -167,7 +169,7 @@ class _ProxyPageState extends State<ProxyPage> {
             Expanded(
               child: SwitchListTile(
                 dense: true,
-                title: const Text('随 CML 启动'),
+                title: Text(trGlobal('随 CML 启动')),
                 value: s.autoStart,
                 onChanged: (v) async {
                   s.autoStart = v;
@@ -179,8 +181,8 @@ class _ProxyPageState extends State<ProxyPage> {
             Expanded(
               child: SwitchListTile(
                 dense: true,
-                title: const Text('TUN 模式'),
-                subtitle: const Text('需管理员权限', style: TextStyle(fontSize: 11)),
+                title: Text(trGlobal('TUN 模式')),
+                subtitle: Text(trGlobal('需管理员权限'), style: TextStyle(fontSize: 11)),
                 value: s.tun,
                 onChanged: (v) async {
                   s.tun = v;
@@ -194,11 +196,11 @@ class _ProxyPageState extends State<ProxyPage> {
         ]),
       ),
       Section(
-        title: '订阅',
+        title: trGlobal('订阅'),
         icon: Icons.rss_feed_rounded,
-        actions: [TextButton.icon(icon: const Icon(Icons.add, size: 16), label: const Text('添加订阅'), onPressed: _addSub)],
+        actions: [TextButton.icon(icon: const Icon(Icons.add, size: 16), label: Text(trGlobal('添加订阅')), onPressed: _addSub)],
         child: s.subscriptions.isEmpty
-            ? const Text('还没有订阅。添加机场提供的 Clash / Mihomo 订阅链接。')
+            ? Text(trGlobal('还没有订阅。添加机场提供的 Clash / Mihomo 订阅链接。'))
             : RadioGroup<String>(
                 groupValue: s.selected,
                 onChanged: (v) async {
@@ -217,16 +219,16 @@ class _ProxyPageState extends State<ProxyPage> {
                       value: sub.name,
                       title: Text(sub.name),
                       subtitle: Text([
-                        if (sub.totalBytes != null) '流量 ${fmtBytes(sub.usedBytes ?? 0)} / ${fmtBytes(sub.totalBytes!)}',
-                        if (sub.expire != null) '到期 ${fmtDate(sub.expire).split(' ').first}',
-                        '更新于 ${fmtDate(sub.updated)}',
+                        if (sub.totalBytes != null) trGlobal('流量 {0} / {1}', [fmtBytes(sub.usedBytes ?? 0), fmtBytes(sub.totalBytes!)]),
+                        if (sub.expire != null) trGlobal('到期 {0}', [fmtDate(sub.expire).split(' ').first]),
+                        trGlobal('更新于 {0}', [fmtDate(sub.updated)]),
                       ].join('  ·  ')),
                       secondary: Wrap(children: [
                         IconButton(
                           icon: const Icon(Icons.sync, size: 18),
-                          tooltip: '更新订阅',
+                          tooltip: trGlobal('更新订阅'),
                           onPressed: () async {
-                            await App.read(context).runTask('更新订阅 ${sub.name}', (_) => proxy.updateSubscription(sub), onError: (e) => toast(context, errText(e), error: true));
+                            await App.read(context).runTask(trGlobal('更新订阅 {0}', [sub.name]), (_) => proxy.updateSubscription(sub), onError: (e) => toast(context, errText(e), error: true));
                             if (proxy.running && s.selected == sub.name) await proxy.restart();
                             if (mounted) setState(() {});
                           },
@@ -234,7 +236,7 @@ class _ProxyPageState extends State<ProxyPage> {
                         IconButton(
                           icon: const Icon(Icons.delete_outline, size: 18),
                           onPressed: () async {
-                            if (!await confirm(context, '删除订阅', '删除 ${sub.name}？', danger: true)) return;
+                            if (!await confirm(context, trGlobal('删除订阅'), trGlobal('删除 {0}？', [sub.name]), danger: true)) return;
                             s.subscriptions.remove(sub);
                             if (s.selected == sub.name) s.selected = s.subscriptions.firstOrNull?.name;
                             await proxy.save();
@@ -248,15 +250,15 @@ class _ProxyPageState extends State<ProxyPage> {
       ),
       if (proxy.running)
         Section(
-          title: '节点',
+          title: trGlobal('节点'),
           icon: Icons.public,
           actions: [IconButton(onPressed: _loadGroups, icon: const Icon(Icons.refresh))],
           child: Column(children: [
             for (final g in groups.where((g) => g.type == 'Selector' || g.type == 'URLTest' || g.type == 'Fallback'))
               ExpansionTile(
                 title: Text(g.name),
-                subtitle: Text('${g.type} · 当前：${g.now}'),
-                trailing: IconButton(icon: const Icon(Icons.speed, size: 18), tooltip: '测速', onPressed: () => _testGroup(g)),
+                subtitle: Text(trGlobal('{0} · 当前：{1}', [g.type, g.now])),
+                trailing: IconButton(icon: const Icon(Icons.speed, size: 18), tooltip: trGlobal('测速'), onPressed: () => _testGroup(g)),
                 children: [
                   Wrap(spacing: 8, runSpacing: 8, children: [
                     for (final n in g.all)
@@ -277,17 +279,17 @@ class _ProxyPageState extends State<ProxyPage> {
           ]),
         ),
       Section(
-        title: 'Clash Verge Rev 完整版',
+        title: trGlobal('Clash Verge Rev 完整版'),
         icon: Icons.apps_outlined,
         child: Row(children: [
-          const Expanded(child: Text('需要 Clash Verge Rev 的完整界面（规则编辑、脚本、覆写等）时，可以一键安装/更新官方最新版，与内置代理二选一使用。')),
+          Expanded(child: Text(trGlobal('需要 Clash Verge Rev 的完整界面（规则编辑、脚本、覆写等）时，可以一键安装/更新官方最新版，与内置代理二选一使用。'))),
           const SizedBox(width: 12),
           FilledButton.tonal(
             onPressed: () async {
-              if (!await confirm(context, 'Clash Verge Rev', '将从 GitHub（clash-verge-rev/clash-verge-rev）下载官方最新安装程序并打开，安装过程由你在安装程序中确认。继续？')) return;
-              await app.runTask('下载 Clash Verge Rev', (t) => app.ctx.clashVerge.update(task: t), onError: (e) => toast(context, errText(e), error: true));
+              if (!await confirm(context, 'Clash Verge Rev', trGlobal('将从 GitHub（clash-verge-rev/clash-verge-rev）下载官方最新安装程序并打开，安装过程由你在安装程序中确认。继续？'))) return;
+              await app.runTask(trGlobal('下载 Clash Verge Rev'), (t) => app.ctx.clashVerge.update(task: t), onError: (e) => toast(context, errText(e), error: true));
             },
-            child: Text(ClashVergeApp.findInstalled() == null ? '安装' : '更新到最新版'),
+            child: Text(ClashVergeApp.findInstalled() == null ? trGlobal('安装') : trGlobal('更新到最新版')),
           ),
         ]),
       ),

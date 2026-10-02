@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:cml_core/cml_core.dart';
 import 'package:flutter/material.dart';
 
+import 'i18n/i18n.dart';
+
 /// App-wide state: the core context plus UI-facing notifications.
 class AppState extends ChangeNotifier {
   final CmlContext ctx = CmlContext();
@@ -79,8 +81,13 @@ String fmtBytes(num b) {
 }
 
 String fmtCount(int n) {
-  if (n >= 100000000) return '${(n / 100000000).toStringAsFixed(1)} 亿';
-  if (n >= 10000) return '${(n / 10000).toStringAsFixed(1)} 万';
+  if (currentLanguage == AppLanguage.en) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+    return '$n';
+  }
+  if (n >= 100000000) return trGlobal('{0} 亿', [(n / 100000000).toStringAsFixed(1)]);
+  if (n >= 10000) return trGlobal('{0} 万', [(n / 10000).toStringAsFixed(1)]);
   return '$n';
 }
 
@@ -91,7 +98,7 @@ String fmtDate(DateTime? d) {
   return '${l.year}-${two(l.month)}-${two(l.day)} ${two(l.hour)}:${two(l.minute)}';
 }
 
-String errText(Object e) => e is CmlException ? e.message : '$e';
+String errText(Object e) => e is CmlException ? trCore(e.message) : '$e';
 
 void toast(BuildContext context, String msg, {bool error = false}) {
   final m = ScaffoldMessenger.maybeOf(context);
@@ -105,18 +112,18 @@ void toast(BuildContext context, String msg, {bool error = false}) {
   ));
 }
 
-Future<bool> confirm(BuildContext context, String title, String body, {String ok = '确定', bool danger = false}) async {
+Future<bool> confirm(BuildContext context, String title, String body, {String? ok, bool danger = false}) async {
   final r = await showDialog<bool>(
     context: context,
     builder: (c) => AlertDialog(
       title: Text(title),
       content: Text(body),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(trGlobal('取消'))),
         FilledButton(
           style: danger ? FilledButton.styleFrom(backgroundColor: Theme.of(c).colorScheme.error) : null,
           onPressed: () => Navigator.pop(c, true),
-          child: Text(ok),
+          child: Text(ok ?? trGlobal('确定')),
         ),
       ],
     ),
@@ -135,8 +142,8 @@ Future<String?> prompt(BuildContext context, String title, {String initial = '',
         child: TextField(controller: ctl, autofocus: true, obscureText: obscure, decoration: InputDecoration(hintText: hint), onSubmitted: (v) => Navigator.pop(c, v)),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(c), child: const Text('取消')),
-        FilledButton(onPressed: () => Navigator.pop(c, ctl.text), child: const Text('确定')),
+        TextButton(onPressed: () => Navigator.pop(c), child: Text(trGlobal('取消'))),
+        FilledButton(onPressed: () => Navigator.pop(c, ctl.text), child: Text(trGlobal('确定'))),
       ],
     ),
   );

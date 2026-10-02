@@ -5,3 +5,6 @@ dist/
 .idea/
 launcher/windows/flutter/ephemeral/
 pubspec_overrides.yaml
+
+# local build artefacts
+launcher/tool/__pycache__/

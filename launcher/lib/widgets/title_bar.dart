@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../i18n/i18n.dart';
+
 import '../theme.dart';
 
 /// Custom window title bar (the native one is hidden) that follows the app theme.
@@ -52,14 +54,14 @@ class _CmlTitleBarState extends State<CmlTitleBar> with WindowListener {
             ),
           ),
         ),
-        _WinButton(icon: Icons.remove_rounded, onTap: windowManager.minimize, tooltip: '最小化'),
+        _WinButton(icon: Icons.remove_rounded, onTap: windowManager.minimize, tooltip: trGlobal('最小化')),
         _WinButton(
           icon: maximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
           iconSize: maximized ? 13 : 16,
-          tooltip: maximized ? '还原' : '最大化',
+          tooltip: maximized ? trGlobal('还原') : trGlobal('最大化'),
           onTap: () async => maximized ? windowManager.unmaximize() : windowManager.maximize(),
         ),
-        _WinButton(icon: Icons.close_rounded, onTap: windowManager.close, tooltip: '关闭', danger: true, hoverColor: cml.gradientA),
+        _WinButton(icon: Icons.close_rounded, onTap: windowManager.close, tooltip: trGlobal('关闭'), danger: true, hoverColor: cml.gradientA),
       ]),
     );
   }

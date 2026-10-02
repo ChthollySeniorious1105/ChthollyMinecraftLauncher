@@ -19,13 +19,13 @@ class _DownloadPageState extends State<DownloadPage> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) => Column(children: [
-        TabBar(controller: tabs, isScrollable: true, tabAlignment: TabAlignment.start, tabs: const [
-          Tab(text: '游戏'),
+        TabBar(controller: tabs, isScrollable: true, tabAlignment: TabAlignment.start, tabs: [
+          Tab(text: trGlobal('游戏')),
           Tab(text: 'Mod'),
-          Tab(text: '整合包'),
-          Tab(text: '光影'),
-          Tab(text: '资源包'),
-          Tab(text: '数据包'),
+          Tab(text: trGlobal('整合包')),
+          Tab(text: trGlobal('光影')),
+          Tab(text: trGlobal('资源包')),
+          Tab(text: trGlobal('数据包')),
           Tab(text: 'Java'),
         ]),
         Expanded(
@@ -86,7 +86,7 @@ class _GameTabState extends State<_GameTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (error != null) return EmptyHint(Icons.cloud_off, error!, action: FilledButton(onPressed: () => _load(refresh: true), child: const Text('重试')));
+    if (error != null) return EmptyHint(Icons.cloud_off, error!, action: FilledButton(onPressed: () => _load(refresh: true), child: Text(trGlobal('重试'))));
     if (manifest == null) return const Center(child: CircularProgressIndicator());
     final list = manifest!.versions.where((v) => (type == 'all' || v.type == type || (type == 'old' && v.type.startsWith('old'))) && v.id.contains(filter)).toList();
     return Column(children: [
@@ -94,17 +94,17 @@ class _GameTabState extends State<_GameTab> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
         child: Row(children: [
           SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'release', label: Text('正式版')),
-              ButtonSegment(value: 'snapshot', label: Text('快照版')),
-              ButtonSegment(value: 'old', label: Text('远古版')),
-              ButtonSegment(value: 'all', label: Text('全部')),
+            segments: [
+              ButtonSegment(value: 'release', label: Text(trGlobal('正式版'))),
+              ButtonSegment(value: 'snapshot', label: Text(trGlobal('快照版'))),
+              ButtonSegment(value: 'old', label: Text(trGlobal('远古版'))),
+              ButtonSegment(value: 'all', label: Text(trGlobal('全部'))),
             ],
             selected: {type},
             onSelectionChanged: (s) => setState(() => type = s.first),
           ),
           const SizedBox(width: 12),
-          Expanded(child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search, size: 18), hintText: '搜索版本号'), onChanged: (v) => setState(() => filter = v.trim()))),
+          Expanded(child: TextField(decoration: InputDecoration(prefixIcon: Icon(Icons.search, size: 18), hintText: trGlobal('搜索版本号')), onChanged: (v) => setState(() => filter = v.trim()))),
           IconButton(
             onPressed: refreshing ? null : () => _load(refresh: true),
             icon: refreshing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh),
@@ -114,9 +114,9 @@ class _GameTabState extends State<_GameTab> {
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
         child: Row(children: [
-          Expanded(child: _LatestCard(label: '最新正式版', entry: manifest!.find(manifest!.latestRelease), icon: Icons.grass_rounded, color: Colors.green)),
+          Expanded(child: _LatestCard(label: trGlobal('最新正式版'), entry: manifest!.find(manifest!.latestRelease), icon: Icons.grass_rounded, color: Colors.green)),
           const SizedBox(width: 12),
-          Expanded(child: _LatestCard(label: '最新快照版', entry: manifest!.find(manifest!.latestSnapshot), icon: Icons.science_rounded, color: Colors.orange)),
+          Expanded(child: _LatestCard(label: trGlobal('最新快照版'), entry: manifest!.find(manifest!.latestSnapshot), icon: Icons.science_rounded, color: Colors.orange)),
         ]),
       ),
       Expanded(
@@ -172,7 +172,7 @@ class _LatestCard extends StatelessWidget {
             const SizedBox(width: 10),
             FilledButton.tonalIcon(
               icon: const Icon(Icons.download_rounded, size: 18),
-              label: const Text('安装'),
+              label: Text(trGlobal('安装')),
               onPressed: entry == null ? null : () => showDialog(context: context, builder: (_) => _InstallDialog(entry: entry!)),
             ),
           ]),
@@ -207,7 +207,7 @@ class _VersionTile extends StatelessWidget {
             Expanded(
               child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(entry.id, style: const TextStyle(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text('${entry.typeLabel} · ${fmtDate(entry.releaseTime).split(' ').first}', style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
+                Text('${trCore(entry.typeLabel)} · ${fmtDate(entry.releaseTime).split(' ').first}', style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
               ]),
             ),
             Icon(Icons.add_circle_outline_rounded, size: 20, color: t.colorScheme.primary),
@@ -283,7 +283,7 @@ class _InstallDialogState extends State<_InstallDialog> {
     final of = ofPicked;
     final standaloneOf = loader == ModLoader.optifine;
     final forgeOf = loader == ModLoader.forge && ofWithForge && of != null;
-    await app.runTask(context.tr('安装 {0}', [id]), (t) async {
+    await app.runTask(trGlobal('安装 {0}', [id]), (t) async {
       final dir = app.ctx.gameDir;
       final ins = app.ctx.installer;
       if (picked == null && !standaloneOf) {
@@ -314,12 +314,12 @@ class _InstallDialogState extends State<_InstallDialog> {
     final t = Theme.of(context);
     final ofCount = ofBuilds?.length ?? 0;
     return AlertDialog(
-      title: Text(context.tr('安装 Minecraft {0}', [widget.entry.id])),
+      title: Text(trGlobal('安装 Minecraft {0}', [widget.entry.id])),
       content: SizedBox(
         width: 540,
         child: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, decoration: InputDecoration(labelText: context.tr('版本名称'))),
+            TextField(controller: name, decoration: InputDecoration(labelText: trGlobal('版本名称'))),
             const SizedBox(height: 12),
             RadioGroup<ModLoader?>(
               groupValue: loader,
@@ -329,7 +329,7 @@ class _InstallDialogState extends State<_InstallDialog> {
                 _updateName();
               }),
               child: Column(children: [
-                RadioListTile<ModLoader?>(dense: true, value: null, title: Text(context.tr('原版（不安装加载器）'))),
+                RadioListTile<ModLoader?>(dense: true, value: null, title: Text(trGlobal('原版（不安装加载器）'))),
                 for (final l in supported)
                   RadioListTile<ModLoader?>(
                     dense: true,
@@ -339,10 +339,10 @@ class _InstallDialogState extends State<_InstallDialog> {
                     subtitle: Text(
                         errors[l] ??
                             (versions[l] == null
-                                ? context.tr('加载中…')
+                                ? trGlobal('加载中…')
                                 : (versions[l]!.isEmpty
-                                    ? context.tr('不支持此版本')
-                                    : context.tr('{0} 个版本，最新 {1}', [versions[l]!.length, versions[l]!.first.version]))),
+                                    ? trGlobal('不支持此版本')
+                                    : trGlobal('{0} 个版本，最新 {1}', [versions[l]!.length, versions[l]!.first.version]))),
                         style: t.textTheme.bodySmall),
                   ),
                 RadioListTile<ModLoader?>(
@@ -353,10 +353,10 @@ class _InstallDialogState extends State<_InstallDialog> {
                   subtitle: Text(
                       ofError ??
                           (ofBuilds == null
-                              ? context.tr('加载中…')
+                              ? trGlobal('加载中…')
                               : ofCount == 0
-                                  ? context.tr('不支持此版本')
-                                  : context.tr('{0} 个版本，最新 {1}（通过 BMCLAPI 获取）', [ofCount, ofBuilds!.first.label])),
+                                  ? trGlobal('不支持此版本')
+                                  : trGlobal('{0} 个版本，最新 {1}（通过 BMCLAPI 获取）', [ofCount, ofBuilds!.first.label])),
                       style: t.textTheme.bodySmall),
                 ),
               ]),
@@ -365,10 +365,10 @@ class _InstallDialogState extends State<_InstallDialog> {
               DropdownButtonFormField<LoaderVersion>(
                 initialValue: picked,
                 isExpanded: true,
-                decoration: InputDecoration(labelText: context.tr('{0} 版本', [loader!.label])),
+                decoration: InputDecoration(labelText: trGlobal('{0} 版本', [loader!.label])),
                 items: [
                   for (final v in versions[loader]!.take(200))
-                    DropdownMenuItem(value: v, child: Text('${v.version}${v.stable ? '' : context.tr('（测试版）')}'))
+                    DropdownMenuItem(value: v, child: Text('${v.version}${v.stable ? '' : trGlobal('（测试版）')}'))
                 ],
                 onChanged: (v) => setState(() {
                   picked = v;
@@ -380,8 +380,8 @@ class _InstallDialogState extends State<_InstallDialog> {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 value: ofWithForge,
-                title: Text(context.tr('同时安装 OptiFine（作为 Mod）')),
-                subtitle: ofPicked?.forge == null ? null : Text(context.tr('OptiFine {0} 推荐 {1}', [ofPicked!.label, ofPicked!.forge!]), style: t.textTheme.bodySmall),
+                title: Text(trGlobal('同时安装 OptiFine（作为 Mod）')),
+                subtitle: ofPicked?.forge == null ? null : Text(trGlobal('OptiFine {0} 推荐 {1}', [ofPicked!.label, ofPicked!.forge!]), style: t.textTheme.bodySmall),
                 onChanged: (v) => setState(() {
                   ofWithForge = v == true;
                   _updateName();
@@ -392,7 +392,7 @@ class _InstallDialogState extends State<_InstallDialog> {
               DropdownButtonFormField<OptiFineBuild>(
                 initialValue: ofPicked,
                 isExpanded: true,
-                decoration: InputDecoration(labelText: context.tr('OptiFine 版本')),
+                decoration: InputDecoration(labelText: trGlobal('OptiFine 版本')),
                 items: [
                   for (final b in ofBuilds!)
                     DropdownMenuItem(value: b, child: Text('${b.label}${b.forge == null ? '' : '  ·  ${b.forge}'}'))
@@ -407,8 +407,8 @@ class _InstallDialogState extends State<_InstallDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('取消'))),
-        FilledButton(onPressed: _canInstall ? _install : null, child: Text(context.tr('安装'))),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(trGlobal('取消'))),
+        FilledButton(onPressed: _canInstall ? _install : null, child: Text(trGlobal('安装'))),
       ],
     );
   }
@@ -478,7 +478,7 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
           Expanded(
             child: TextField(
               controller: query,
-              decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 18), hintText: '搜索${widget.type.label}'),
+              decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 18), hintText: trGlobal('搜索{0}', [trCore(widget.type.label)])),
               onSubmitted: (_) => _search(),
             ),
           ),
@@ -486,7 +486,7 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
           SizedBox(
             width: 110,
             child: TextField(
-              decoration: const InputDecoration(hintText: '游戏版本'),
+              decoration: InputDecoration(hintText: trGlobal('游戏版本')),
               onChanged: (v) => gameVersion = v.trim(),
               onSubmitted: (_) => _search(),
             ),
@@ -495,8 +495,8 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
             const SizedBox(width: 8),
             DropdownButton<String>(
               value: loader,
-              items: const [
-                DropdownMenuItem(value: '', child: Text('任意加载器')),
+              items: [
+                DropdownMenuItem(value: '', child: Text(trGlobal('任意加载器'))),
                 DropdownMenuItem(value: 'fabric', child: Text('Fabric')),
                 DropdownMenuItem(value: 'forge', child: Text('Forge')),
                 DropdownMenuItem(value: 'neoforge', child: Text('NeoForge')),
@@ -511,11 +511,11 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
           const SizedBox(width: 8),
           DropdownButton<SortBy>(
             value: sort,
-            items: const [
-              DropdownMenuItem(value: SortBy.relevance, child: Text('相关度')),
-              DropdownMenuItem(value: SortBy.downloads, child: Text('下载量')),
-              DropdownMenuItem(value: SortBy.updated, child: Text('最近更新')),
-              DropdownMenuItem(value: SortBy.newest, child: Text('最新发布')),
+            items: [
+              DropdownMenuItem(value: SortBy.relevance, child: Text(trGlobal('相关度'))),
+              DropdownMenuItem(value: SortBy.downloads, child: Text(trGlobal('下载量'))),
+              DropdownMenuItem(value: SortBy.updated, child: Text(trGlobal('最近更新'))),
+              DropdownMenuItem(value: SortBy.newest, child: Text(trGlobal('最新发布'))),
             ],
             onChanged: (v) {
               setState(() => sort = v!);
@@ -524,16 +524,16 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
           ),
           if (widget.type == ContentType.modpack) ...[
             const SizedBox(width: 8),
-            OutlinedButton.icon(icon: const Icon(Icons.file_open_outlined, size: 16), label: const Text('导入本地整合包'), onPressed: () => importLocalModpack(context)),
+            OutlinedButton.icon(icon: const Icon(Icons.file_open_outlined, size: 16), label: Text(trGlobal('导入本地整合包')), onPressed: () => importLocalModpack(context)),
           ],
         ]),
       ),
       if (loading) const LinearProgressIndicator(),
       Expanded(
         child: error != null
-            ? EmptyHint(Icons.cloud_off, error!, action: FilledButton(onPressed: _search, child: const Text('重试')))
+            ? EmptyHint(Icons.cloud_off, error!, action: FilledButton(onPressed: _search, child: Text(trGlobal('重试'))))
             : results.isEmpty && !loading
-                ? const EmptyHint(Icons.search_off, '没有结果')
+                ? EmptyHint(Icons.search_off, trGlobal('没有结果'))
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     itemCount: results.length,
@@ -551,7 +551,7 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
                           const SizedBox(width: 6),
                           for (final l in r.loaders.take(3)) Padding(padding: const EdgeInsets.only(right: 4), child: Pill(l)),
                         ]),
-                        subtitle: Text('${r.description}\n${r.author.isEmpty ? '' : '${r.author} · '}${fmtCount(r.downloads)} 次下载 · ${fmtDate(r.updated).split(' ').first}',
+                        subtitle: Text(trGlobal('{0}\n{1}{2} 次下载 · {3}', [r.description, r.author.isEmpty ? '' : '${r.author} · ', fmtCount(r.downloads), fmtDate(r.updated).split(' ').first]),
                             maxLines: 2, overflow: TextOverflow.ellipsis),
                         isThreeLine: true,
                         onTap: () => showDialog(context: context, builder: (_) => ProjectDialog(project: r)),
@@ -609,10 +609,10 @@ class _ProjectDialogState extends State<ProjectDialog> {
     final app = App.read(context);
     final type = widget.project.type;
     if (type == ContentType.modpack) {
-      final name = await prompt(context, '整合包实例名称', initial: widget.project.title);
+      final name = await prompt(context, trGlobal('整合包实例名称'), initial: widget.project.title);
       if (name == null || name.trim().isEmpty || !mounted) return;
       Navigator.pop(context);
-      await app.runTask('安装整合包 ${name.trim()}', (t) async {
+      await app.runTask(trGlobal('安装整合包 {0}', [name.trim()]), (t) async {
         final tmp = p.join(Os.cmlHome, 'cache', v.primaryFile.filename);
         await app.ctx.contentInstaller.installFile(v, p.dirname(tmp), task: t);
         final java = app.ctx.java.pick(21) ?? app.ctx.java.pick(17) ?? app.ctx.java.installs.first;
@@ -626,10 +626,10 @@ class _ProjectDialogState extends State<ProjectDialog> {
       final saves = p.join(app.ctx.gameDir.gameDirFor(target!, isolated: app.settings.isolateVersions), 'saves');
       final worlds = await Worlds.listJava(saves);
       if (!mounted) return;
-      if (worlds.isEmpty) return toast(context, '版本 $target 没有存档，无法安装数据包', error: true);
+      if (worlds.isEmpty) return toast(context, trGlobal('版本 {0} 没有存档，无法安装数据包', [target]), error: true);
       final w = await showDialog<WorldInfo>(
           context: context,
-          builder: (c) => SimpleDialog(title: const Text('安装到哪个存档？'), children: [for (final w in worlds) SimpleDialogOption(onPressed: () => Navigator.pop(c, w), child: Text(w.name))]));
+          builder: (c) => SimpleDialog(title: Text(trGlobal('安装到哪个存档？')), children: [for (final w in worlds) SimpleDialogOption(onPressed: () => Navigator.pop(c, w), child: Text(w.name))]));
       if (w == null) return;
       folder = p.join(w.path, 'datapacks');
     } else {
@@ -638,7 +638,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
     if (!mounted) return;
     Navigator.pop(context);
     final tv = installed.where((x) => x.id == target).firstOrNull?.version;
-    await app.runTask('下载 ${widget.project.title}', (t) async {
+    await app.runTask(trGlobal('下载 {0}', [widget.project.title]), (t) async {
       final files = type == ContentType.mod
           ? await app.ctx.contentInstaller.installWithDependencies(v, folder!, gameVersion: tv?.baseVersion, loader: tv?.loaders.firstOrNull?.slug, task: t)
           : [await app.ctx.contentInstaller.installFile(v, folder!, task: t)];
@@ -653,7 +653,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
     return AlertDialog(
       title: Row(children: [
         Expanded(child: Text(pr.title)),
-        IconButton(icon: const Icon(Icons.open_in_new, size: 18), tooltip: '打开项目主页', onPressed: () => launchUrl(Uri.parse(pr.pageUrl))),
+        IconButton(icon: const Icon(Icons.open_in_new, size: 18), tooltip: trGlobal('打开项目主页'), onPressed: () => launchUrl(Uri.parse(pr.pageUrl))),
       ]),
       content: SizedBox(
         width: 640,
@@ -667,7 +667,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
                 child: DropdownButtonFormField<String>(
                   initialValue: target,
                   isExpanded: true,
-                  decoration: const InputDecoration(labelText: '安装到版本'),
+                  decoration: InputDecoration(labelText: trGlobal('安装到版本')),
                   items: [for (final v in installed) DropdownMenuItem(value: v.id, child: Text(v.id))],
                   onChanged: (v) {
                     setState(() {
@@ -682,7 +682,7 @@ class _ProjectDialogState extends State<ProjectDialog> {
             SizedBox(
               width: 140,
               child: TextField(
-                decoration: const InputDecoration(labelText: '筛选游戏版本'),
+                decoration: InputDecoration(labelText: trGlobal('筛选游戏版本')),
                 onSubmitted: (v) {
                   gameVersion = v.trim();
                   setState(() => versions = null);
@@ -698,42 +698,42 @@ class _ProjectDialogState extends State<ProjectDialog> {
                 : versions == null
                     ? const Center(child: CircularProgressIndicator())
                     : versions!.isEmpty
-                        ? const Center(child: Text('没有适用于该版本的文件'))
+                        ? Center(child: Text(trGlobal('没有适用于该版本的文件')))
                         : ListView(children: [
                             for (final v in versions!)
                               ListTile(
                                 dense: true,
                                 title: Text(v.name),
                                 subtitle: Text('${v.gameVersions.take(6).join(', ')}  ·  ${v.loaders.join(', ')}  ·  ${fmtDate(v.published).split(' ').first}'),
-                                leading: Pill(switch (v.channel) { 'beta' => 'Beta', 'alpha' => 'Alpha', _ => '正式' },
+                                leading: Pill(switch (v.channel) { 'beta' => 'Beta', 'alpha' => 'Alpha', _ => trGlobal('正式') },
                                     color: v.channel == 'release' ? Colors.green : Colors.orange),
                                 trailing: FilledButton.tonal(
                                   onPressed: target == null && pr.type != ContentType.modpack ? null : () => _install(v),
-                                  child: const Text('安装'),
+                                  child: Text(trGlobal('安装')),
                                 ),
                               ),
                           ]),
           ),
-          if (app.settings.contentSource == ContentSource.mcim) Text('当前使用 MCIM 镜像源，可在设置中切换。', style: Theme.of(context).textTheme.bodySmall),
+          if (app.settings.contentSource == ContentSource.mcim) Text(trGlobal('当前使用 MCIM 镜像源，可在设置中切换。'), style: Theme.of(context).textTheme.bodySmall),
         ]),
       ),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭'))],
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text(trGlobal('关闭')))],
     );
   }
 }
 
 Future<void> importLocalModpack(BuildContext context) async {
   final app = App.read(context);
-  final f = await openFile(acceptedTypeGroups: const [XTypeGroup(label: '整合包', extensions: ['mrpack', 'zip'])]);
+  final f = await openFile(acceptedTypeGroups: [XTypeGroup(label: trGlobal('整合包'), extensions: ['mrpack', 'zip'])]);
   if (f == null || !context.mounted) return;
-  final name = await prompt(context, '实例名称', initial: p.basenameWithoutExtension(f.name));
+  final name = await prompt(context, trGlobal('实例名称'), initial: p.basenameWithoutExtension(f.name));
   if (name == null || name.trim().isEmpty) return;
   final java = app.ctx.java.pick(21) ?? app.ctx.java.pick(17) ?? app.ctx.java.installs.firstOrNull;
   if (java == null) {
-    if (context.mounted) toast(context, '请先安装 Java', error: true);
+    if (context.mounted) toast(context, trGlobal('请先安装 Java'), error: true);
     return;
   }
-  await app.runTask('导入整合包 ${name.trim()}', (t) => app.ctx.contentInstaller.importModpack(app.ctx.gameDir, f.path, name.trim(), javaPath: java.path, task: t),
+  await app.runTask(trGlobal('导入整合包 {0}', [name.trim()]), (t) => app.ctx.contentInstaller.importModpack(app.ctx.gameDir, f.path, name.trim(), javaPath: java.path, task: t),
       onError: (e) => toast(context, errText(e), error: true));
 }
 
@@ -747,14 +747,14 @@ class _JavaTab extends StatelessWidget {
     final app = App.of(context);
     return PageBody(children: [
       Section(
-        title: '下载 Java（Eclipse Temurin）',
+        title: trGlobal('下载 Java（Eclipse Temurin）'),
         icon: Icons.download_for_offline_outlined,
         child: Wrap(spacing: 12, runSpacing: 12, children: [
           for (final m in JavaDownloader.majors)
             FilledButton.tonalIcon(
               icon: const Icon(Icons.download, size: 16),
               label: Text('Java $m'),
-              onPressed: () => app.runTask('下载 Java $m', (t) async {
+              onPressed: () => app.runTask(trGlobal('下载 Java {0}', [m]), (t) async {
                 final pkg = await app.ctx.javaDownloader.latest(m);
                 final exe = await app.ctx.javaDownloader.install(pkg, task: t);
                 await app.ctx.java.addManual(exe);
@@ -764,10 +764,9 @@ class _JavaTab extends StatelessWidget {
         ]),
       ),
       Section(
-        title: '版本对应',
+        title: trGlobal('版本对应'),
         icon: Icons.info_outline,
-        child: Text('Minecraft 1.20.5 及以上需要 Java 21；1.18 – 1.20.4 需要 Java 17；1.17 需要 Java 16；1.16.5 及以下推荐 Java 8。\n'
-            '下载源为「BMCLAPI」或「自动」时会优先使用清华大学镜像。'),
+        child: Text(trGlobal('Minecraft 1.20.5 及以上需要 Java 21；1.18 – 1.20.4 需要 Java 17；1.17 需要 Java 16；1.16.5 及以下推荐 Java 8。\n下载源为「BMCLAPI」或「自动」时会优先使用清华大学镜像。')),
       ),
     ]);
   }

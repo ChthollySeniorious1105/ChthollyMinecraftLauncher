@@ -1,6 +1,8 @@
 import 'package:cml_core/cml_core.dart';
 import 'package:flutter/material.dart';
 
+import '../i18n/i18n.dart';
+
 import '../state.dart';
 
 /// Star toggle for a version. Click = add/remove from the default folder; right-click / long-press = choose folders.
@@ -21,7 +23,7 @@ class FavoriteStar extends StatelessWidget {
       onLongPress: () => showFavoriteFolders(context, gameDir, versionId),
       child: IconButton(
         visualDensity: VisualDensity.compact,
-        tooltip: on ? '已收藏（右键选择收藏夹）' : '收藏（右键选择收藏夹）',
+        tooltip: on ? trGlobal('已收藏（右键选择收藏夹）') : trGlobal('收藏（右键选择收藏夹）'),
         icon: AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
           transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
@@ -60,7 +62,7 @@ class _FolderPickerState extends State<_FolderPicker> {
     final app = App.of(context);
     final fav = app.ctx.favorites;
     return AlertDialog(
-      title: Text('收藏 ${widget.versionId}'),
+      title: Text(trGlobal('收藏 {0}', [widget.versionId])),
       content: SizedBox(
         width: 380,
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -68,14 +70,14 @@ class _FolderPickerState extends State<_FolderPicker> {
             CheckboxListTile(
               value: selected.contains(f),
               secondary: Icon(favoriteIcon(f), color: Color(f.color)),
-              title: Text(f.name),
-              subtitle: Text('${f.entries.length} 个版本'),
+              title: Text(favoriteName(f)),
+              subtitle: Text(trGlobal('{0} 个版本', [f.entries.length])),
               onChanged: (v) => setState(() => v == true ? selected.add(f) : selected.remove(f)),
             ),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.create_new_folder_outlined),
-            title: const Text('新建收藏夹'),
+            title: Text(trGlobal('新建收藏夹')),
             onTap: () async {
               final f = await editFavoriteFolder(context);
               if (f != null) setState(() => selected.add(f));
@@ -84,14 +86,14 @@ class _FolderPickerState extends State<_FolderPicker> {
         ]),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(trGlobal('取消'))),
         FilledButton(
           onPressed: () async {
             await fav.setFolders(widget.gameDir, widget.versionId, selected);
             app.changed();
             if (context.mounted) Navigator.pop(context);
           },
-          child: const Text('保存'),
+          child: Text(trGlobal('保存')),
         ),
       ],
     );
@@ -120,11 +122,11 @@ Future<FavoriteFolder?> editFavoriteFolder(BuildContext context, {FavoriteFolder
     context: context,
     builder: (c) => StatefulBuilder(
       builder: (c, set) => AlertDialog(
-        title: Text(folder == null ? '新建收藏夹' : '编辑收藏夹'),
+        title: Text(folder == null ? trGlobal('新建收藏夹') : trGlobal('编辑收藏夹')),
         content: SizedBox(
           width: 380,
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: '名称', hintText: '例如：生存、模组整合、PVP')),
+            TextField(controller: name, autofocus: true, decoration: InputDecoration(labelText: trGlobal('名称'), hintText: trGlobal('例如：生存、模组整合、PVP'))),
             const SizedBox(height: 14),
             Wrap(spacing: 6, runSpacing: 6, children: [
               for (final i in favoriteIcons)
@@ -154,8 +156,8 @@ Future<FavoriteFolder?> editFavoriteFolder(BuildContext context, {FavoriteFolder
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(c, name.text.trim().isNotEmpty), child: const Text('确定')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(trGlobal('取消'))),
+          FilledButton(onPressed: () => Navigator.pop(c, name.text.trim().isNotEmpty), child: Text(trGlobal('确定'))),
         ],
       ),
     ),
@@ -175,3 +177,6 @@ Future<FavoriteFolder?> editFavoriteFolder(BuildContext context, {FavoriteFolder
   app.changed();
   return folder;
 }
+
+/// Display name: the built-in default folder ("收藏") follows the UI language until the user renames it.
+String favoriteName(FavoriteFolder f) => f.name == '收藏' ? trGlobal('收藏') : f.name;

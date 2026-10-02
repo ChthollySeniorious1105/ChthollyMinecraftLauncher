@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:cml_core/cml_core.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+
+import '../i18n/i18n.dart';
 import 'package:image/image.dart' as img;
 
 import '../state.dart';
@@ -90,7 +92,7 @@ class _SkinPageState extends State<SkinPage> {
   }
 
   Future<void> _open() async {
-    final f = await openFile(acceptedTypeGroups: const [XTypeGroup(label: '皮肤 PNG', extensions: ['png'])]);
+    final f = await openFile(acceptedTypeGroups: [XTypeGroup(label: trGlobal('皮肤 PNG'), extensions: ['png'])]);
     if (f == null) return;
     try {
       _snapshot();
@@ -110,7 +112,7 @@ class _SkinPageState extends State<SkinPage> {
     final app = App.read(context);
     final a = app.ctx.accounts.selected;
     final url = a?.activeSkin?.url;
-    if (url == null) return toast(context, '当前账号没有自定义皮肤', error: true);
+    if (url == null) return toast(context, trGlobal('当前账号没有自定义皮肤'), error: true);
     try {
       final bytes = await app.ctx.http.bytes(Uri.parse(url));
       _snapshot();
@@ -129,21 +131,21 @@ class _SkinPageState extends State<SkinPage> {
     final loc = await getSaveLocation(suggestedName: fileName ?? 'skin.png', acceptedTypeGroups: const [XTypeGroup(label: 'PNG', extensions: ['png'])]);
     if (loc == null) return;
     await File(loc.path).writeAsBytes(SkinModel.encode(skin));
-    if (mounted) toast(context, '已保存');
+    if (mounted) toast(context, trGlobal('已保存'));
   }
 
   Future<void> _upload() async {
     final app = App.read(context);
     var a = app.ctx.accounts.selected;
-    if (a == null) return toast(context, '请先登录微软账号', error: true);
-    if (!await confirm(context, '上传皮肤', '将当前皮肤（${slim ? '纤细 Alex' : '经典 Steve'} 模型）设置为 ${a.name} 的正版皮肤？')) return;
-    await app.runTask('上传皮肤', (t) async {
+    if (a == null) return toast(context, trGlobal('请先登录微软账号'), error: true);
+    if (!await confirm(context, trGlobal('上传皮肤'), trGlobal('将当前皮肤（{0} 模型）设置为 {1} 的正版皮肤？', [slim ? trGlobal('纤细 Alex') : trGlobal('经典 Steve'), a.name]))) return;
+    await app.runTask(trGlobal('上传皮肤'), (t) async {
       a = await app.ctx.auth.ensureValid(a!);
       await app.ctx.auth.uploadSkin(a!, SkinModel.encode(skin), slim: slim);
       app.ctx.accounts.upsert(a!);
       await app.ctx.accounts.save();
     }, onError: (e) => toast(context, errText(e), error: true));
-    if (mounted) toast(context, '皮肤已更新');
+    if (mounted) toast(context, trGlobal('皮肤已更新'));
   }
 
   @override
@@ -157,12 +159,12 @@ class _SkinPageState extends State<SkinPage> {
           padding: const EdgeInsets.all(16),
           child: Column(children: [
             Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
-              OutlinedButton.icon(icon: const Icon(Icons.folder_open, size: 16), label: const Text('打开'), onPressed: _open),
-              OutlinedButton.icon(icon: const Icon(Icons.cloud_download_outlined, size: 16), label: const Text('读取当前皮肤'), onPressed: _loadCurrent),
-              OutlinedButton.icon(icon: const Icon(Icons.save_outlined, size: 16), label: const Text('另存为'), onPressed: _save),
+              OutlinedButton.icon(icon: const Icon(Icons.folder_open, size: 16), label: Text(trGlobal('打开')), onPressed: _open),
+              OutlinedButton.icon(icon: const Icon(Icons.cloud_download_outlined, size: 16), label: Text(trGlobal('读取当前皮肤')), onPressed: _loadCurrent),
+              OutlinedButton.icon(icon: const Icon(Icons.save_outlined, size: 16), label: Text(trGlobal('另存为')), onPressed: _save),
               OutlinedButton.icon(
                 icon: const Icon(Icons.note_add_outlined, size: 16),
-                label: const Text('新建'),
+                label: Text(trGlobal('新建')),
                 onPressed: () {
                   _snapshot();
                   setState(() {
@@ -171,20 +173,20 @@ class _SkinPageState extends State<SkinPage> {
                   });
                 },
               ),
-              IconButton(onPressed: undo.isEmpty ? null : () => _restore(undo, redo), icon: const Icon(Icons.undo), tooltip: '撤销'),
-              IconButton(onPressed: redo.isEmpty ? null : () => _restore(redo, undo), icon: const Icon(Icons.redo), tooltip: '重做'),
+              IconButton(onPressed: undo.isEmpty ? null : () => _restore(undo, redo), icon: const Icon(Icons.undo), tooltip: trGlobal('撤销')),
+              IconButton(onPressed: redo.isEmpty ? null : () => _restore(redo, undo), icon: const Icon(Icons.redo), tooltip: trGlobal('重做')),
             ]),
             const SizedBox(height: 10),
             Row(children: [
               SegmentedButton<_Tool>(
                 showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: _Tool.pencil, icon: Icon(Icons.edit, size: 16), tooltip: '画笔'),
-                  ButtonSegment(value: _Tool.eraser, icon: Icon(Icons.auto_fix_normal, size: 16), tooltip: '橡皮'),
-                  ButtonSegment(value: _Tool.fill, icon: Icon(Icons.format_color_fill, size: 16), tooltip: '填充'),
-                  ButtonSegment(value: _Tool.picker, icon: Icon(Icons.colorize, size: 16), tooltip: '取色'),
-                  ButtonSegment(value: _Tool.darken, icon: Icon(Icons.brightness_4, size: 16), tooltip: '加深'),
-                  ButtonSegment(value: _Tool.lighten, icon: Icon(Icons.brightness_7, size: 16), tooltip: '减淡'),
+                segments: [
+                  ButtonSegment(value: _Tool.pencil, icon: Icon(Icons.edit, size: 16), tooltip: trGlobal('画笔')),
+                  ButtonSegment(value: _Tool.eraser, icon: Icon(Icons.auto_fix_normal, size: 16), tooltip: trGlobal('橡皮')),
+                  ButtonSegment(value: _Tool.fill, icon: Icon(Icons.format_color_fill, size: 16), tooltip: trGlobal('填充')),
+                  ButtonSegment(value: _Tool.picker, icon: Icon(Icons.colorize, size: 16), tooltip: trGlobal('取色')),
+                  ButtonSegment(value: _Tool.darken, icon: Icon(Icons.brightness_4, size: 16), tooltip: trGlobal('加深')),
+                  ButtonSegment(value: _Tool.lighten, icon: Icon(Icons.brightness_7, size: 16), tooltip: trGlobal('减淡')),
                 ],
                 selected: {tool},
                 onSelectionChanged: (s) => setState(() => tool = s.first),
@@ -242,12 +244,12 @@ class _SkinPageState extends State<SkinPage> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(children: [
               SegmentedButton<bool>(
-                segments: const [ButtonSegment(value: false, label: Text('经典 Steve')), ButtonSegment(value: true, label: Text('纤细 Alex'))],
+                segments: [ButtonSegment(value: false, label: Text(trGlobal('经典 Steve'))), ButtonSegment(value: true, label: Text(trGlobal('纤细 Alex')))],
                 selected: {slim},
                 onSelectionChanged: (s) => setState(() => slim = s.first),
               ),
               const Spacer(),
-              const Text('外层'),
+              Text(trGlobal('外层')),
               Switch(value: overlay, onChanged: (v) => setState(() => overlay = v)),
             ]),
           ),
@@ -257,16 +259,16 @@ class _SkinPageState extends State<SkinPage> {
               decoration: BoxDecoration(color: t.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(12)),
               child: Stack(children: [
                 Positioned.fill(child: Skin3DView(skin: skin, slim: slim, showOverlay: overlay, revision: revision)),
-                Positioned(left: 12, bottom: 8, child: Text('拖动旋转 · 滚轮缩放 · 双击复位', style: t.textTheme.bodySmall)),
+                Positioned(left: 12, bottom: 8, child: Text(trGlobal('拖动旋转 · 滚轮缩放 · 双击复位'), style: t.textTheme.bodySmall)),
               ]),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(children: [
-              Expanded(child: FilledButton.icon(icon: const Icon(Icons.cloud_upload_outlined), label: const Text('上传为正版皮肤'), onPressed: _upload)),
+              Expanded(child: FilledButton.icon(icon: const Icon(Icons.cloud_upload_outlined), label: Text(trGlobal('上传为正版皮肤')), onPressed: _upload)),
               const SizedBox(width: 8),
-              Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.flag_outlined), label: const Text('披风'), onPressed: () => showDialog(context: context, builder: (_) => const CapeDialog()))),
+              Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.flag_outlined), label: Text(trGlobal('披风')), onPressed: () => showDialog(context: context, builder: (_) => const CapeDialog()))),
             ]),
           ),
         ]),
@@ -320,16 +322,16 @@ Future<Color?> _pickColor(BuildContext context, Color initial) async {
     context: context,
     builder: (c) => StatefulBuilder(
       builder: (c, set) => AlertDialog(
-        title: const Text('选择颜色'),
+        title: Text(trGlobal('选择颜色')),
         content: SizedBox(
           width: 360,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(height: 48, color: h.toColor()),
             const SizedBox(height: 8),
             for (final (label, value, max, apply) in [
-              ('色相', h.hue, 360.0, (double v) => h = h.withHue(v)),
-              ('饱和度', h.saturation, 1.0, (double v) => h = h.withSaturation(v)),
-              ('明度', h.value, 1.0, (double v) => h = h.withValue(v)),
+              (trGlobal('色相'), h.hue, 360.0, (double v) => h = h.withHue(v)),
+              (trGlobal('饱和度'), h.saturation, 1.0, (double v) => h = h.withSaturation(v)),
+              (trGlobal('明度'), h.value, 1.0, (double v) => h = h.withValue(v)),
             ])
               Row(children: [
                 SizedBox(width: 56, child: Text(label)),
@@ -355,8 +357,8 @@ Future<Color?> _pickColor(BuildContext context, Color initial) async {
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c), child: const Text('取消')),
-          FilledButton(onPressed: () => Navigator.pop(c, h.toColor()), child: const Text('确定')),
+          TextButton(onPressed: () => Navigator.pop(c), child: Text(trGlobal('取消'))),
+          FilledButton(onPressed: () => Navigator.pop(c, h.toColor()), child: Text(trGlobal('确定'))),
         ],
       ),
     ),
@@ -394,15 +396,15 @@ class _CapeDialogState extends State<CapeDialog> {
     final app = App.of(context);
     final a = app.ctx.accounts.selected;
     return AlertDialog(
-      title: const Text('披风'),
+      title: Text(trGlobal('披风')),
       content: SizedBox(
         width: 520,
         child: a == null
-            ? const Text('请先登录微软账号')
+            ? Text(trGlobal('请先登录微软账号'))
             : a.capes.isEmpty
-                ? const Text('这个账号没有任何披风（披风来自 Minecraft 活动、Migrator 等）。')
+                ? Text(trGlobal('这个账号没有任何披风（披风来自 Minecraft 活动、Migrator 等）。'))
                 : Wrap(spacing: 12, runSpacing: 12, children: [
-                    _capeTile(context, null, '不显示', a.activeCape == null),
+                    _capeTile(context, null, trGlobal('不显示'), a.activeCape == null),
                     for (final c in a.capes) _capeTile(context, c, c.alias, c.active),
                   ]),
       ),
@@ -420,9 +422,9 @@ class _CapeDialogState extends State<CapeDialog> {
                     } catch (_) {}
                     if (mounted) setState(() => busy = false);
                   },
-            child: const Text('刷新'),
+            child: Text(trGlobal('刷新')),
           ),
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(trGlobal('关闭'))),
       ],
     );
   }

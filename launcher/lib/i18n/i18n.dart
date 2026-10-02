@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'core_en.dart';
 import 'strings_en.dart';
 
 /// UI languages. Chinese source strings are the keys; other languages look them up.
@@ -42,3 +43,30 @@ extension Tr on BuildContext {
 /// Language for code that has no BuildContext (core messages shown in toasts etc.).
 AppLanguage currentLanguage = AppLanguage.zh;
 String trGlobal(String zh, [List<Object?> args = const []]) => translate(currentLanguage, zh, args);
+
+/// Translates a message produced by cml_core (errors, task details, labels) by matching it against
+/// the Chinese templates in [coreEn], capturing the `{n}` parts and inserting them into the English text.
+String trCore(String msg) {
+  if (currentLanguage == AppLanguage.zh || msg.isEmpty) return msg;
+  final exact = coreEn[msg];
+  if (exact != null) return exact;
+  for (final e in _coreMatchers) {
+    final m = e.$1.firstMatch(msg);
+    if (m == null) continue;
+    var out = e.$2;
+    for (var i = 0; i < m.groupCount; i++) {
+      out = out.replaceAll('{$i}', m.group(i + 1) ?? '');
+    }
+    return out;
+  }
+  return msg;
+}
+
+final List<(RegExp, String)> _coreMatchers = [
+  for (final e in coreEn.entries)
+    if (e.key.contains('{0}'))
+      (
+        RegExp('^${e.key.split(RegExp(r'\{\d\}')).map(RegExp.escape).join('(.*?)')}\$', dotAll: true),
+        e.value,
+      )
+];

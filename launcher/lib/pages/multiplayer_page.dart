@@ -4,6 +4,8 @@ import 'package:cml_core/cml_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../i18n/i18n.dart';
+
 import '../state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -51,10 +53,10 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
         case 'members':
           _Session.members = [for (final x in m['list'] as List) '$x'];
         case 'closed':
-          _Session.status = '房间已关闭：${m['reason']}';
+          _Session.status = trGlobal('房间已关闭：{0}', [m['reason']]);
           _Session.localPort = null;
         case 'disconnected':
-          _Session.status = '已断开：${m['reason']}';
+          _Session.status = trGlobal('已断开：{0}', [m['reason']]);
           _Session.client = null;
           _Session.localPort = null;
           _Session.members = [];
@@ -71,9 +73,9 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     setState(() => busy = true);
     final c = TunnelClient(addr, app.ctx.knownServers);
     try {
-      await c.connect(name: acc?.name ?? '玩家', password: serverPassword.text, trustNewIdentity: trust);
+      await c.connect(name: acc?.name ?? trGlobal('玩家'), password: serverPassword.text, trustNewIdentity: trust);
       _Session.client = c;
-      _Session.status = '已连接 ${c.serverName}（指纹 ${c.fingerprint}）';
+      _Session.status = trGlobal('已连接 {0}（指纹 {1}）', [c.serverName, c.fingerprint]);
       app.settings.lastCmlsServer = addr;
       if (!app.settings.cmlsServers.contains(addr)) app.settings.cmlsServers.add(addr);
       await app.saveSettings();
@@ -81,7 +83,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
       await _refreshRooms();
     } on IdentityChangedException catch (e) {
       if (!mounted) return;
-      final ok = await confirm(context, '⚠ 服务器身份已改变', '${e.message}\n\n只有在你确认服务器重装过时才继续。', ok: '信任新身份', danger: true);
+      final ok = await confirm(context, trGlobal('⚠ 服务器身份已改变'), trGlobal('{0}\n\n只有在你确认服务器重装过时才继续。', [e.message]), ok: trGlobal('信任新身份'), danger: true);
       if (ok) {
         setState(() => busy = false);
         return _connect(trust: true);
@@ -110,7 +112,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
       final found = await TunnelClient.detectLocalLan();
       if (found == null) {
         if (mounted) {
-          toast(context, '没有检测到已“对局域网开放”的游戏。请在游戏中按 Esc →「对局域网开放」，或手动填写端口。', error: true);
+          toast(context, trGlobal('没有检测到已“对局域网开放”的游戏。请在游戏中按 Esc →「对局域网开放」，或手动填写端口。'), error: true);
           setState(() => busy = false);
         }
         return;
@@ -119,13 +121,13 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     }
     try {
       final room = await client!.host(
-        title: hostTitle.text.trim().isEmpty ? (motd.isEmpty ? '${app.ctx.accounts.selected?.name ?? '玩家'} 的世界' : motd) : hostTitle.text.trim(),
+        title: hostTitle.text.trim().isEmpty ? (motd.isEmpty ? trGlobal('{0} 的世界', [app.ctx.accounts.selected?.name ?? trGlobal('玩家')]) : motd) : hostTitle.text.trim(),
         lanPort: port,
         version: app.settings.selectedVersion ?? '',
         password: hostPassword.text,
         public: hostPublic,
       );
-      _Session.status = '正在主持房间 $room（本地端口 $port）';
+      _Session.status = trGlobal('正在主持房间 {0}（本地端口 {1}）', [room, port]);
     } catch (e) {
       if (mounted) toast(context, errText(e), error: true);
     }
@@ -135,7 +137,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
   Future<void> _join(String code, {bool locked = false}) async {
     var pw = roomPassword.text;
     if (locked && pw.isEmpty) {
-      final r = await prompt(context, '房间密码', obscure: true);
+      final r = await prompt(context, trGlobal('房间密码'), obscure: true);
       if (r == null) return;
       pw = r;
     }
@@ -143,7 +145,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     try {
       final port = await client!.join(code, password: pw);
       _Session.localPort = port;
-      _Session.status = '已加入房间 ${client!.room}';
+      _Session.status = trGlobal('已加入房间 {0}', [client!.room]);
     } catch (e) {
       if (mounted) toast(context, errText(e), error: true);
     }
@@ -154,7 +156,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     await client?.leave();
     _Session.localPort = null;
     _Session.members = [];
-    _Session.status = '已离开房间';
+    _Session.status = trGlobal('已离开房间');
     setState(() {});
   }
 
@@ -175,7 +177,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     return PageBody(children: [
       if (c == null) const _MpHero(),
       Section(
-        title: 'CMLS 联机服务器',
+        title: trGlobal('CMLS 联机服务器'),
         icon: Icons.dns_outlined,
         child: c == null
             ? Column(children: [
@@ -186,14 +188,14 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
                       optionsBuilder: (v) => app.settings.cmlsServers.where((s) => s.contains(v.text)),
                       fieldViewBuilder: (ctx, ctl, focus, submit) {
                         ctl.addListener(() => address.text = ctl.text);
-                        return TextField(controller: ctl, focusNode: focus, decoration: const InputDecoration(labelText: '服务器地址', hintText: 'example.com:25590'));
+                        return TextField(controller: ctl, focusNode: focus, decoration: InputDecoration(labelText: trGlobal('服务器地址'), hintText: 'example.com:25590'));
                       },
                     ),
                   ),
                   const SizedBox(width: 8),
-                  SizedBox(width: 180, child: TextField(controller: serverPassword, obscureText: true, decoration: const InputDecoration(labelText: '服务器密码（可选）'))),
+                  SizedBox(width: 180, child: TextField(controller: serverPassword, obscureText: true, decoration: InputDecoration(labelText: trGlobal('服务器密码（可选）')))),
                   const SizedBox(width: 8),
-                  FilledButton(onPressed: busy ? null : _connect, child: const Text('连接')),
+                  FilledButton(onPressed: busy ? null : _connect, child: Text(trGlobal('连接'))),
                 ]),
                 if (app.settings.cmlsServers.isNotEmpty) ...[
                   const SizedBox(height: 10),
@@ -211,7 +213,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
                   ]),
                 ],
                 const SizedBox(height: 8),
-                const Text('所有联机流量经 X25519 + ChaCha20-Poly1305 端到端加密传输到 CMLS 服务器；首次连接会记住服务器身份，被冒充时会警告。',
+                Text(trGlobal('所有联机流量经 X25519 + ChaCha20-Poly1305 端到端加密传输到 CMLS 服务器；首次连接会记住服务器身份，被冒充时会警告。'),
                     style: TextStyle(fontSize: 12)),
               ])
             : Row(children: [
@@ -220,20 +222,20 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
                 Expanded(child: Text(_Session.status)),
                 if (c.motd.isNotEmpty) Text(c.motd),
                 const SizedBox(width: 8),
-                OutlinedButton(onPressed: _disconnect, child: const Text('断开')),
+                OutlinedButton(onPressed: _disconnect, child: Text(trGlobal('断开'))),
               ]),
       ),
       if (c != null && inRoom)
         Section(
-          title: c.isHost ? '我的房间 ${c.room}' : '已加入 ${c.room}',
+          title: c.isHost ? trGlobal('我的房间 {0}', [c.room]) : trGlobal('已加入 {0}', [c.room]),
           actions: [
-            TextButton.icon(icon: const Icon(Icons.copy, size: 16), label: const Text('复制房间号'), onPressed: () => Clipboard.setData(ClipboardData(text: c.room!))),
+            TextButton.icon(icon: const Icon(Icons.copy, size: 16), label: Text(trGlobal('复制房间号')), onPressed: () => Clipboard.setData(ClipboardData(text: c.room!))),
             const SizedBox(width: 8),
-            OutlinedButton(onPressed: _leave, child: Text(c.isHost ? '关闭房间' : '离开')),
+            OutlinedButton(onPressed: _leave, child: Text(c.isHost ? trGlobal('关闭房间') : trGlobal('离开'))),
           ],
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (!c.isHost && _Session.localPort != null) ...[
-              Text('房间已出现在 Minecraft「多人游戏」列表中（局域网世界）。如果没有出现，请手动添加服务器：'),
+              Text(trGlobal('房间已出现在 Minecraft「多人游戏」列表中（局域网世界）。如果没有出现，请手动添加服务器：')),
               const SizedBox(height: 6),
               Row(children: [
                 SelectableText('127.0.0.1:${_Session.localPort}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -241,64 +243,62 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
               ]),
               const SizedBox(height: 8),
             ],
-            if (c.isHost) const Text('把房间号发给朋友，他们在 CML 中连接同一个 CMLS 服务器并输入房间号即可加入。关闭 CML 或游戏世界后房间失效。'),
+            if (c.isHost) Text(trGlobal('把房间号发给朋友，他们在 CML 中连接同一个 CMLS 服务器并输入房间号即可加入。关闭 CML 或游戏世界后房间失效。')),
             const SizedBox(height: 8),
             Wrap(spacing: 6, children: [for (final m in _Session.members) Chip(avatar: const Icon(Icons.person, size: 16), label: Text(m))]),
           ]),
         ),
       if (c != null && !inRoom) ...[
         Section(
-          title: '创建房间（我来开服）',
+          title: trGlobal('创建房间（我来开服）'),
           icon: Icons.add_home_outlined,
           child: Column(children: [
-            const Align(alignment: Alignment.centerLeft, child: Text('1. 启动游戏进入单人世界 → Esc →「对局域网开放」\n2. 回到这里点击「创建房间」，CML 会自动检测端口')),
+            Align(alignment: Alignment.centerLeft, child: Text(trGlobal('1. 启动游戏进入单人世界 → Esc →「对局域网开放」\n2. 回到这里点击「创建房间」，CML 会自动检测端口'))),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: TextField(controller: hostTitle, decoration: const InputDecoration(labelText: '房间名称（可选）'))),
+              Expanded(child: TextField(controller: hostTitle, decoration: InputDecoration(labelText: trGlobal('房间名称（可选）')))),
               const SizedBox(width: 8),
-              SizedBox(width: 140, child: TextField(controller: hostPort, decoration: const InputDecoration(labelText: '端口（自动检测）'))),
+              SizedBox(width: 140, child: TextField(controller: hostPort, decoration: InputDecoration(labelText: trGlobal('端口（自动检测）')))),
               const SizedBox(width: 8),
-              SizedBox(width: 160, child: TextField(controller: hostPassword, obscureText: true, decoration: const InputDecoration(labelText: '房间密码（可选）'))),
+              SizedBox(width: 160, child: TextField(controller: hostPassword, obscureText: true, decoration: InputDecoration(labelText: trGlobal('房间密码（可选）')))),
               const SizedBox(width: 8),
-              Row(children: [Checkbox(value: hostPublic, onChanged: (v) => setState(() => hostPublic = v!)), const Text('公开')]),
+              Row(children: [Checkbox(value: hostPublic, onChanged: (v) => setState(() => hostPublic = v!)), Text(trGlobal('公开'))]),
               const SizedBox(width: 8),
-              FilledButton(onPressed: busy ? null : _host, child: const Text('创建房间')),
+              FilledButton(onPressed: busy ? null : _host, child: Text(trGlobal('创建房间'))),
             ]),
           ]),
         ),
         Section(
-          title: '加入房间',
+          title: trGlobal('加入房间'),
           icon: Icons.login_rounded,
-          actions: [IconButton(onPressed: _refreshRooms, icon: const Icon(Icons.refresh), tooltip: '刷新房间列表')],
+          actions: [IconButton(onPressed: _refreshRooms, icon: const Icon(Icons.refresh), tooltip: trGlobal('刷新房间列表'))],
           child: Column(children: [
             Row(children: [
-              Expanded(child: TextField(controller: roomCode, decoration: const InputDecoration(labelText: '房间号'), textCapitalization: TextCapitalization.characters)),
+              Expanded(child: TextField(controller: roomCode, decoration: InputDecoration(labelText: trGlobal('房间号')), textCapitalization: TextCapitalization.characters)),
               const SizedBox(width: 8),
-              SizedBox(width: 180, child: TextField(controller: roomPassword, obscureText: true, decoration: const InputDecoration(labelText: '房间密码（如有）'))),
+              SizedBox(width: 180, child: TextField(controller: roomPassword, obscureText: true, decoration: InputDecoration(labelText: trGlobal('房间密码（如有）')))),
               const SizedBox(width: 8),
-              FilledButton(onPressed: busy ? null : () => _join(roomCode.text.trim()), child: const Text('加入')),
+              FilledButton(onPressed: busy ? null : () => _join(roomCode.text.trim()), child: Text(trGlobal('加入'))),
             ]),
             const SizedBox(height: 12),
             if (rooms.isEmpty)
-              const Text('没有公开房间')
+              Text(trGlobal('没有公开房间'))
             else
               for (final r in rooms)
                 ListTile(
                   dense: true,
                   leading: Icon(r.locked ? Icons.lock_outline : Icons.public),
                   title: Text(r.title),
-                  subtitle: Text('${r.room} · 房主 ${r.host} · ${r.players} 人${r.version.isEmpty ? '' : ' · ${r.version}'}'),
-                  trailing: FilledButton.tonal(onPressed: busy ? null : () => _join(r.room, locked: r.locked), child: const Text('加入')),
+                  subtitle: Text(trGlobal('{0} · 房主 {1} · {2} 人{3}', [r.room, r.host, r.players, r.version.isEmpty ? '' : ' · ${r.version}'])),
+                  trailing: FilledButton.tonal(onPressed: busy ? null : () => _join(r.room, locked: r.locked), child: Text(trGlobal('加入'))),
                 ),
           ]),
         ),
       ],
-      const Section(
-        title: '部署 CMLS',
+      Section(
+        title: trGlobal('部署 CMLS'),
         icon: Icons.cloud_outlined,
-        child: Text('CMLS 是 CML 的联机中继服务端（cmls.exe），部署在任意有公网 IP 或内网穿透的机器上即可：\n'
-            '  cmls.exe --port 25590 --name "我的联机服"\n'
-            '首次启动会生成 server_identity.key（服务器身份，请备份勿外传）并显示服务器指纹。只需放行 / 映射 TCP 端口。'),
+        child: Text(trGlobal('CMLS 是 CML 的联机中继服务端（cmls.exe），部署在任意有公网 IP 或内网穿透的机器上即可：\n  cmls.exe --port 25590 --name "我的联机服"\n首次启动会生成 server_identity.key（服务器身份，请备份勿外传）并显示服务器指纹。只需放行 / 映射 TCP 端口。')),
       ),
     ]);
   }
@@ -329,16 +329,16 @@ class _MpHero extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(gradient: CmlColors.of(context).hero, borderRadius: BorderRadius.circular(20)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('和朋友一起玩，无需公网 IP', style: t.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+        Text(trGlobal('和朋友一起玩，无需公网 IP'), style: t.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text('局域网世界通过加密隧道转发，朋友在「多人游戏」里就能看到你的房间', style: t.textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.88))),
+        Text(trGlobal('局域网世界通过加密隧道转发，朋友在「多人游戏」里就能看到你的房间'), style: t.textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.88))),
         const SizedBox(height: 18),
         Row(children: [
-          step(Icons.dns_rounded, '1. 连接服务器', '填写 CMLS 服务器地址，首次连接会记住服务器指纹'),
+          step(Icons.dns_rounded, trGlobal('1. 连接服务器'), trGlobal('填写 CMLS 服务器地址，首次连接会记住服务器指纹')),
           const SizedBox(width: 12),
-          step(Icons.add_home_rounded, '2. 创建或加入', '房主「对局域网开放」后创建房间，朋友输入房间号'),
+          step(Icons.add_home_rounded, trGlobal('2. 创建或加入'), trGlobal('房主「对局域网开放」后创建房间，朋友输入房间号')),
           const SizedBox(width: 12),
-          step(Icons.sports_esports_rounded, '3. 进入游戏', '房间自动出现在多人游戏列表，直接加入即可'),
+          step(Icons.sports_esports_rounded, trGlobal('3. 进入游戏'), trGlobal('房间自动出现在多人游戏列表，直接加入即可')),
         ]),
       ]),
     );

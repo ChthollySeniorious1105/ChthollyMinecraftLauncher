@@ -34,7 +34,7 @@ class _ModUpdatesTabState extends State<ModUpdatesTab> {
     final v = widget.version;
     if (v == null) return;
     setState(() => busy = true);
-    final r = await app.runTask(context.tr('检查更新'), (t) => app.ctx.contentUpdater.check(widget.folder, gameVersion: v.baseVersion, loader: loader, includeBeta: beta, task: t),
+    final r = await app.runTask(trGlobal('检查更新'), (t) => app.ctx.contentUpdater.check(widget.folder, gameVersion: v.baseVersion, loader: loader, includeBeta: beta, task: t),
         onError: (e) => toast(context, errText(e), error: true));
     if (mounted) {
       setState(() {
@@ -49,12 +49,12 @@ class _ModUpdatesTabState extends State<ModUpdatesTab> {
     final list = scan!.updates.where((u) => u.selected).toList();
     if (list.isEmpty) return;
     setState(() => busy = true);
-    final n = await app.runTask(context.tr('更新 {0} 个文件', [list.length]), (t) => app.ctx.contentUpdater.apply(list, task: t),
+    final n = await app.runTask(trGlobal('更新 {0} 个文件', [list.length]), (t) => app.ctx.contentUpdater.apply(list, task: t),
         onError: (e) => toast(context, errText(e), error: true));
     if (!mounted) return;
     setState(() => busy = false);
     if (n != null) {
-      toast(context, context.tr('已更新 {0} 个文件，旧文件移到了 .cml-old 文件夹', [n]));
+      toast(context, trGlobal('已更新 {0} 个文件，旧文件移到了 .cml-old 文件夹', [n]));
       _check();
     }
   }
@@ -69,12 +69,12 @@ class _ModUpdatesTabState extends State<ModUpdatesTab> {
         child: Row(children: [
           FilledButton.icon(
             icon: busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.update_rounded, size: 18),
-            label: Text(context.tr('检查更新')),
+            label: Text(trGlobal('检查更新')),
             onPressed: busy || widget.version == null ? null : _check,
           ),
           const SizedBox(width: 12),
           Checkbox(value: beta, onChanged: (v) => setState(() => beta = v == true)),
-          Text(context.tr('包含测试版')),
+          Text(trGlobal('包含测试版')),
           const Spacer(),
           if (s != null && s.updates.isNotEmpty) ...[
             TextButton(
@@ -84,12 +84,12 @@ class _ModUpdatesTabState extends State<ModUpdatesTab> {
                   u.selected = !all;
                 }
               }),
-              child: Text(context.tr('全选 / 取消')),
+              child: Text(trGlobal('全选 / 取消')),
             ),
             const SizedBox(width: 8),
             FilledButton.tonalIcon(
               icon: const Icon(Icons.download_rounded, size: 18),
-              label: Text(context.tr('更新所选（{0}）', [s.updates.where((u) => u.selected).length])),
+              label: Text(trGlobal('更新所选（{0}）', [s.updates.where((u) => u.selected).length])),
               onPressed: busy ? null : _apply,
             ),
           ],
@@ -97,14 +97,14 @@ class _ModUpdatesTabState extends State<ModUpdatesTab> {
       ),
       Expanded(
         child: s == null
-            ? EmptyHint(Icons.update_rounded, context.tr('通过 Modrinth 与 CurseForge 检查本版本 Mod、资源包、光影是否有新版本\n更新前旧文件会自动备份'))
+            ? EmptyHint(Icons.update_rounded, trGlobal('通过 Modrinth 与 CurseForge 检查本版本 Mod、资源包、光影是否有新版本\n更新前旧文件会自动备份'))
             : ListView(padding: const EdgeInsets.all(12), children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: Text(context.tr('检查了 {0} 个文件：{1} 个可更新，{2} 个无法识别（非平台发布的文件）', [s.checked, s.updates.length, s.unknown.length]),
+                  child: Text(trGlobal('检查了 {0} 个文件：{1} 个可更新，{2} 个无法识别（非平台发布的文件）', [s.checked, s.updates.length, s.unknown.length]),
                       style: t.textTheme.bodySmall),
                 ),
-                if (s.updates.isEmpty) EmptyHint(Icons.check_circle_outline, context.tr('全部都是最新版本')),
+                if (s.updates.isEmpty) EmptyHint(Icons.check_circle_outline, trGlobal('全部都是最新版本')),
                 for (final u in s.updates)
                   CheckboxListTile(
                     value: u.selected,
@@ -116,7 +116,7 @@ class _ModUpdatesTabState extends State<ModUpdatesTab> {
                   ),
                 if (s.unknown.isNotEmpty)
                   ExpansionTile(
-                    title: Text(context.tr('无法识别的文件（{0}）', [s.unknown.length])),
+                    title: Text(trGlobal('无法识别的文件（{0}）', [s.unknown.length])),
                     children: [for (final f in s.unknown) ListTile(dense: true, title: Text(f.displayName))],
                   ),
               ]),
@@ -158,11 +158,11 @@ class _ScreenshotsTabState extends State<ScreenshotsTab> {
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
         child: Row(children: [
-          Text(context.tr('{0} 张截图', [s.length])),
+          Text(trGlobal('{0} 张截图', [s.length])),
           const Spacer(),
           OutlinedButton.icon(
             icon: const Icon(Icons.folder_open, size: 16),
-            label: Text(context.tr('打开文件夹')),
+            label: Text(trGlobal('打开文件夹')),
             onPressed: () async {
               final d = Directory(p.join(widget.gameDir, 'screenshots'));
               await d.create(recursive: true);
@@ -174,7 +174,7 @@ class _ScreenshotsTabState extends State<ScreenshotsTab> {
       ),
       Expanded(
         child: s.isEmpty
-            ? EmptyHint(Icons.photo_library_outlined, context.tr('还没有截图\n在游戏中按 F2 截图'))
+            ? EmptyHint(Icons.photo_library_outlined, trGlobal('还没有截图\n在游戏中按 F2 截图'))
             : GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 280, childAspectRatio: 16 / 10, crossAxisSpacing: 10, mainAxisSpacing: 10),
@@ -245,7 +245,7 @@ class _ViewerState extends State<_Viewer> {
                   IconButton(onPressed: i < widget.shots.length - 1 ? () => setState(() => i++) : null, icon: const Icon(Icons.chevron_right, color: Colors.white)),
                   const Spacer(),
                   IconButton(
-                    tooltip: context.tr('复制图片'),
+                    tooltip: trGlobal('复制图片'),
                     icon: const Icon(Icons.copy, color: Colors.white),
                     onPressed: () async {
                       // copy via PowerShell (Flutter has no image clipboard on desktop)
@@ -254,15 +254,15 @@ class _ViewerState extends State<_Viewer> {
                         '-Command',
                         "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::SetImage([System.Drawing.Image]::FromFile('${s.file.path.replaceAll("'", "''")}'))"
                       ]);
-                      if (context.mounted) toast(context, context.tr('已复制到剪贴板'));
+                      if (context.mounted) toast(context, trGlobal('已复制到剪贴板'));
                     },
                   ),
-                  IconButton(tooltip: context.tr('在文件夹中显示'), icon: const Icon(Icons.folder_open, color: Colors.white), onPressed: () => revealInExplorer(s.file.path)),
+                  IconButton(tooltip: trGlobal('在文件夹中显示'), icon: const Icon(Icons.folder_open, color: Colors.white), onPressed: () => revealInExplorer(s.file.path)),
                   IconButton(
-                    tooltip: context.tr('删除'),
+                    tooltip: trGlobal('删除'),
                     icon: const Icon(Icons.delete_outline, color: Colors.white),
                     onPressed: () async {
-                      if (!await confirm(context, context.tr('删除截图'), context.tr('删除 {0}？', [p.basename(s.file.path)]), danger: true)) return;
+                      if (!await confirm(context, trGlobal('删除截图'), trGlobal('删除 {0}？', [p.basename(s.file.path)]), danger: true)) return;
                       await s.file.delete();
                       widget.onDeleted();
                       if (context.mounted) Navigator.pop(context);
@@ -324,7 +324,7 @@ class _LogsTabState extends State<LogsTab> {
     final t = Theme.of(context);
     final l = logs;
     if (l == null) return const Center(child: CircularProgressIndicator());
-    if (l.isEmpty) return EmptyHint(Icons.article_outlined, context.tr('这个版本还没有日志'));
+    if (l.isEmpty) return EmptyHint(Icons.article_outlined, trGlobal('这个版本还没有日志'));
     var lines = text.split('\n');
     if (onlyProblems) lines = lines.where((x) => x.contains('ERROR') || x.contains('WARN') || x.contains('Exception') || x.contains('Caused by') || x.trimLeft().startsWith('at ')).toList();
     if (filter.isNotEmpty) lines = lines.where((x) => x.toLowerCase().contains(filter)).toList();
@@ -351,15 +351,15 @@ class _LogsTabState extends State<LogsTab> {
             child: Row(children: [
               Expanded(
                 child: TextField(
-                  decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 18), hintText: context.tr('搜索日志')),
+                  decoration: InputDecoration(prefixIcon: const Icon(Icons.search, size: 18), hintText: trGlobal('搜索日志')),
                   onChanged: (v) => setState(() => filter = v.toLowerCase()),
                 ),
               ),
               const SizedBox(width: 8),
-              FilterChip(label: Text(context.tr('仅错误与警告')), selected: onlyProblems, onSelected: (v) => setState(() => onlyProblems = v)),
-              IconButton(tooltip: context.tr('复制全部'), icon: const Icon(Icons.copy, size: 18), onPressed: () => Clipboard.setData(ClipboardData(text: text))),
-              IconButton(tooltip: context.tr('在文件夹中显示'), icon: const Icon(Icons.folder_open, size: 18), onPressed: current == null ? null : () => revealInExplorer(current!.file.path)),
-              IconButton(tooltip: context.tr('用记事本打开'), icon: const Icon(Icons.open_in_new, size: 18), onPressed: current == null ? null : () => Process.start('notepad.exe', [current!.file.path])),
+              FilterChip(label: Text(trGlobal('仅错误与警告')), selected: onlyProblems, onSelected: (v) => setState(() => onlyProblems = v)),
+              IconButton(tooltip: trGlobal('复制全部'), icon: const Icon(Icons.copy, size: 18), onPressed: () => Clipboard.setData(ClipboardData(text: text))),
+              IconButton(tooltip: trGlobal('在文件夹中显示'), icon: const Icon(Icons.folder_open, size: 18), onPressed: current == null ? null : () => revealInExplorer(current!.file.path)),
+              IconButton(tooltip: trGlobal('用记事本打开'), icon: const Icon(Icons.open_in_new, size: 18), onPressed: current == null ? null : () => Process.start('notepad.exe', [current!.file.path])),
               IconButton(onPressed: _load, icon: const Icon(Icons.refresh, size: 18)),
             ]),
           ),
@@ -451,7 +451,7 @@ class _ServersTabState extends State<ServersTab> {
       final r = await ServerPinger.ping(s.ip);
       if (mounted) setState(() => status[s.ip] = r);
     } catch (e) {
-      if (mounted) setState(() => errors[s.ip] = context.tr('无法连接'));
+      if (mounted) setState(() => errors[s.ip] = trGlobal('无法连接'));
     }
   }
 
@@ -466,18 +466,18 @@ class _ServersTabState extends State<ServersTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text(s == null ? context.tr('添加服务器') : context.tr('编辑服务器')),
+        title: Text(s == null ? trGlobal('添加服务器') : trGlobal('编辑服务器')),
         content: SizedBox(
           width: 400,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, decoration: InputDecoration(labelText: context.tr('服务器名称'))),
+            TextField(controller: name, decoration: InputDecoration(labelText: trGlobal('服务器名称'))),
             const SizedBox(height: 10),
-            TextField(controller: ip, autofocus: true, decoration: InputDecoration(labelText: context.tr('服务器地址'), hintText: 'mc.example.com:25565')),
+            TextField(controller: ip, autofocus: true, decoration: InputDecoration(labelText: trGlobal('服务器地址'), hintText: 'mc.example.com:25565')),
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(context.tr('取消'))),
-          FilledButton(onPressed: () => Navigator.pop(c, ip.text.trim().isNotEmpty), child: Text(context.tr('保存'))),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(trGlobal('取消'))),
+          FilledButton(onPressed: () => Navigator.pop(c, ip.text.trim().isNotEmpty), child: Text(trGlobal('保存'))),
         ],
       ),
     );
@@ -502,7 +502,7 @@ class _ServersTabState extends State<ServersTab> {
     await app.saveSettings();
     if (!mounted) return;
     app.gameLog.clear();
-    await app.runTask(context.tr('启动 {0} 并进入 {1}', [widget.versionId, s.name]), (t) async {
+    await app.runTask(trGlobal('启动 {0} 并进入 {1}', [widget.versionId, s.name]), (t) async {
       final gp = await app.ctx.launch(widget.versionId, task: t, onLog: app.addLog, joinServer: s.ip);
       app.running = gp;
       app.changed();
@@ -522,16 +522,16 @@ class _ServersTabState extends State<ServersTab> {
       Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
         child: Row(children: [
-          FilledButton.tonalIcon(icon: const Icon(Icons.add, size: 18), label: Text(context.tr('添加服务器')), onPressed: () => _edit()),
+          FilledButton.tonalIcon(icon: const Icon(Icons.add, size: 18), label: Text(trGlobal('添加服务器')), onPressed: () => _edit()),
           const SizedBox(width: 8),
-          OutlinedButton.icon(icon: const Icon(Icons.refresh, size: 16), label: Text(context.tr('全部刷新')), onPressed: _pingAll),
+          OutlinedButton.icon(icon: const Icon(Icons.refresh, size: 16), label: Text(trGlobal('全部刷新')), onPressed: _pingAll),
           const Spacer(),
-          Text(context.tr('与游戏内「多人游戏」列表同步（servers.dat）'), style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
+          Text(trGlobal('与游戏内「多人游戏」列表同步（servers.dat）'), style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
         ]),
       ),
       Expanded(
         child: s.isEmpty
-            ? EmptyHint(Icons.dns_outlined, context.tr('还没有保存的服务器'))
+            ? EmptyHint(Icons.dns_outlined, trGlobal('还没有保存的服务器'))
             : ReorderableListView.builder(
                 padding: const EdgeInsets.all(12),
                 buildDefaultDragHandles: false,
@@ -569,7 +569,7 @@ class _ServersTabState extends State<ServersTab> {
                               Text(sv.ip, style: t.textTheme.bodySmall?.copyWith(color: t.hintColor)),
                             ]),
                             const SizedBox(height: 4),
-                            if (st != null) MotdText(st.motd) else Text(err ?? context.tr('正在连接…'), style: TextStyle(color: err != null ? t.colorScheme.error : t.hintColor)),
+                            if (st != null) MotdText(st.motd) else Text(err ?? trGlobal('正在连接…'), style: TextStyle(color: err != null ? t.colorScheme.error : t.hintColor)),
                           ]),
                         ),
                         const SizedBox(width: 12),
@@ -587,7 +587,7 @@ class _ServersTabState extends State<ServersTab> {
                             Text(st.version, style: t.textTheme.bodySmall?.copyWith(color: t.hintColor), maxLines: 1),
                           ]),
                         const SizedBox(width: 12),
-                        FilledButton(onPressed: App.of(context).running != null ? null : () => _join(sv), child: Text(context.tr('加入'))),
+                        FilledButton(onPressed: App.of(context).running != null ? null : () => _join(sv), child: Text(trGlobal('加入'))),
                         PopupMenuButton<String>(
                           onSelected: (v) async {
                             switch (v) {
@@ -598,17 +598,17 @@ class _ServersTabState extends State<ServersTab> {
                               case 'refresh':
                                 _ping(sv);
                               case 'delete':
-                                if (context.mounted && await confirm(context, context.tr('删除服务器'), context.tr('删除 {0}？', [sv.name]), danger: true)) {
+                                if (context.mounted && await confirm(context, trGlobal('删除服务器'), trGlobal('删除 {0}？', [sv.name]), danger: true)) {
                                   s.removeAt(i);
                                   await _save();
                                 }
                             }
                           },
                           itemBuilder: (_) => [
-                            PopupMenuItem(value: 'edit', child: Text(context.tr('编辑'))),
-                            PopupMenuItem(value: 'copy', child: Text(context.tr('复制地址'))),
-                            PopupMenuItem(value: 'refresh', child: Text(context.tr('刷新'))),
-                            PopupMenuItem(value: 'delete', child: Text(context.tr('删除'))),
+                            PopupMenuItem(value: 'edit', child: Text(trGlobal('编辑'))),
+                            PopupMenuItem(value: 'copy', child: Text(trGlobal('复制地址'))),
+                            PopupMenuItem(value: 'refresh', child: Text(trGlobal('刷新'))),
+                            PopupMenuItem(value: 'delete', child: Text(trGlobal('删除'))),
                           ],
                         ),
                       ]),
@@ -717,7 +717,7 @@ class _ExportDialogState extends State<_ExportDialog> {
     final lang = context.lang;
     Navigator.pop(context);
     final r = await app.runTask(
-        context.tr('导出 {0}', [widget.versionId]),
+        trGlobal('导出 {0}', [widget.versionId]),
         (t) => app.ctx.exporter.export(
               dir: app.ctx.gameDir,
               versionId: widget.versionId,
@@ -731,7 +731,7 @@ class _ExportDialogState extends State<_ExportDialog> {
             ),
         onError: (e) => messenger.showSnackBar(SnackBar(content: Text(errText(e)))));
     if (r != null) {
-      messenger.showSnackBar(SnackBar(content: Text(translate(lang, '已导出：{0} 个文件从平台下载，{1} 个文件打包在内', [r.referenced, r.bundled]))));
+      messenger.showSnackBar(SnackBar(content: Text(translate(lang, trGlobal('已导出：{0} 个文件从平台下载，{1} 个文件打包在内'), [r.referenced, r.bundled]))));
       await revealInExplorer(r.output);
     }
   }
@@ -742,7 +742,7 @@ class _ExportDialogState extends State<_ExportDialog> {
     final e = entries;
     final total = e == null ? 0 : e.where((x) => x.selected).fold<int>(0, (a, b) => a + b.size);
     return AlertDialog(
-      title: Text(context.tr('导出实例 {0}', [widget.versionId])),
+      title: Text(trGlobal('导出实例 {0}', [widget.versionId])),
       content: SizedBox(
         width: 560,
         height: 460,
@@ -755,12 +755,12 @@ class _ExportDialogState extends State<_ExportDialog> {
                 RadioListTile<ExportFormat>(
                   dense: true,
                   value: f,
-                  title: Text(context.tr(f.label)),
+                  title: Text(trCore(f.label)),
                   subtitle: Text(
-                      context.tr(switch (f) {
-                        ExportFormat.modrinth => 'Modrinth 上能找到的文件只记录下载地址，其余打包，体积小',
-                        ExportFormat.curseforge => 'CurseForge 上能找到的文件只记录项目 ID，其余打包',
-                        ExportFormat.full => '包含版本文件和全部选中内容，可离线导入到任何 CML',
+                      trGlobal(switch (f) {
+                        ExportFormat.modrinth => trGlobal('Modrinth 上能找到的文件只记录下载地址，其余打包，体积小'),
+                        ExportFormat.curseforge => trGlobal('CurseForge 上能找到的文件只记录项目 ID，其余打包'),
+                        ExportFormat.full => trGlobal('包含版本文件和全部选中内容，可离线导入到任何 CML'),
                       }),
                       style: t.textTheme.bodySmall),
                 ),
@@ -768,12 +768,12 @@ class _ExportDialogState extends State<_ExportDialog> {
           ),
           if (format != ExportFormat.full)
             Row(children: [
-              Expanded(child: TextField(controller: name, decoration: InputDecoration(labelText: context.tr('整合包名称')))),
+              Expanded(child: TextField(controller: name, decoration: InputDecoration(labelText: trGlobal('整合包名称')))),
               const SizedBox(width: 10),
-              SizedBox(width: 120, child: TextField(controller: version, decoration: InputDecoration(labelText: context.tr('版本号')))),
+              SizedBox(width: 120, child: TextField(controller: version, decoration: InputDecoration(labelText: trGlobal('版本号')))),
             ]),
           const SizedBox(height: 10),
-          Text(context.tr('包含的文件（约 {0}）', [fmtBytes(total)]), style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(trGlobal('包含的文件（约 {0}）', [fmtBytes(total)]), style: const TextStyle(fontWeight: FontWeight.w600)),
           Expanded(
             child: e == null
                 ? const Center(child: CircularProgressIndicator())
@@ -784,15 +784,15 @@ class _ExportDialogState extends State<_ExportDialog> {
                         value: x.selected,
                         onChanged: (v) => setState(() => x.selected = v == true),
                         title: Text(x.path),
-                        subtitle: Text('${x.files} ${context.tr('个文件')} · ${fmtBytes(x.size)}'),
+                        subtitle: Text('${x.files} ${trGlobal('个文件')} · ${fmtBytes(x.size)}'),
                       ),
                   ]),
           ),
         ]),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('取消'))),
-        FilledButton(onPressed: e == null ? null : _export, child: Text(context.tr('导出'))),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(trGlobal('取消'))),
+        FilledButton(onPressed: e == null ? null : _export, child: Text(trGlobal('导出'))),
       ],
     );
   }

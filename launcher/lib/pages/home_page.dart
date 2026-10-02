@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
+import '../i18n/i18n.dart';
+
 import '../state.dart';
 import '../theme.dart';
 import '../widgets/account.dart';
@@ -48,7 +50,7 @@ class _HomePageState extends State<HomePage> {
     final app = App.read(context);
     if (!p.equals(app.settings.gameDir, gameDir)) {
       final match = app.settings.gameDirs.firstWhere((d) => p.equals(d, gameDir), orElse: () => '');
-      if (match.isEmpty) return toast(context, '找不到游戏目录 $gameDir', error: true);
+      if (match.isEmpty) return toast(context, trGlobal('找不到游戏目录 {0}', [gameDir]), error: true);
       app.settings.gameDir = match;
     }
     app.settings.selectedVersion = id;
@@ -67,7 +69,7 @@ class _HomePageState extends State<HomePage> {
     }
     setState(() => launching = true);
     app.gameLog.clear();
-    final gp = await app.runTask('启动 $id', (t) => app.ctx.launch(id, task: t, onLog: app.addLog), onError: (e) {
+    final gp = await app.runTask(trGlobal('启动 {0}', [id]), (t) => app.ctx.launch(id, task: t, onLog: app.addLog), onError: (e) {
       if (mounted) toast(context, errText(e), error: true);
     });
     if (!mounted) return;
@@ -86,13 +88,13 @@ class _HomePageState extends State<HomePage> {
       showDialog(
         context: context,
         builder: (c) => AlertDialog(
-          title: const Text('游戏崩溃了'),
+          title: Text(trGlobal('游戏崩溃了')),
           content: SizedBox(
             width: 560,
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('退出码 $code'),
+              Text(trGlobal('退出码 {0}', [code])),
               const SizedBox(height: 8),
-              Text(reason ?? '未能自动判断原因，请查看日志。', style: const TextStyle(fontWeight: FontWeight.w600)),
+              Text(reason ?? trGlobal('未能自动判断原因，请查看日志。'), style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
               SizedBox(
                 height: 220,
@@ -100,7 +102,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ]),
           ),
-          actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text('关闭'))],
+          actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(trGlobal('关闭')))],
         ),
       );
     }
@@ -134,9 +136,9 @@ class _HomePageState extends State<HomePage> {
                 SkinHead(acc?.activeSkin?.url, size: 44),
                 const SizedBox(width: 14),
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(acc == null ? '欢迎使用 CML' : '欢迎回来，${acc.name}',
+                  Text(acc == null ? trGlobal('欢迎使用 CML') : trGlobal('欢迎回来，{0}', [acc.name]),
                       style: t.textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
-                  Text(acc == null ? '登录 Microsoft 账号后即可开始游戏' : (running ? '游戏正在运行' : '准备好开始冒险了吗？'),
+                  Text(acc == null ? trGlobal('登录 Microsoft 账号后即可开始游戏') : (running ? trGlobal('游戏正在运行') : trGlobal('准备好开始冒险了吗？')),
                       style: t.textTheme.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.85))),
                 ]),
               ]),
@@ -144,7 +146,7 @@ class _HomePageState extends State<HomePage> {
               if (loading)
                 const LinearProgressIndicator(color: Colors.white)
               else if (versions.isEmpty)
-                Text('当前游戏目录还没有安装任何版本，请前往「下载」页安装。', style: TextStyle(color: Colors.white.withValues(alpha: 0.9)))
+                Text(trGlobal('当前游戏目录还没有安装任何版本，请前往「下载」页安装。'), style: TextStyle(color: Colors.white.withValues(alpha: 0.9)))
               else
                 Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
                   Expanded(
@@ -180,7 +182,7 @@ class _HomePageState extends State<HomePage> {
                                 child: Row(children: [
                                   Text(v.id),
                                   const SizedBox(width: 8),
-                                  if (v.broken) const Pill('已损坏', color: Colors.red),
+                                  if (v.broken) Pill(trGlobal('已损坏'), color: Colors.red),
                                   for (final l in v.version?.loaders ?? <ModLoader>{}) Padding(padding: const EdgeInsets.only(right: 4), child: Pill(l.label)),
                                   if (v.version != null && v.version!.baseVersion != v.id) Text(v.version!.baseVersion, style: t.textTheme.bodySmall),
                                 ]),
@@ -209,17 +211,17 @@ class _HomePageState extends State<HomePage> {
                       icon: launching || running
                           ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: cs.primary))
                           : const Icon(Icons.play_arrow_rounded, size: 30),
-                      label: Text(running ? '游戏运行中' : (launching ? '启动中…' : '启动游戏'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                      label: Text(running ? trGlobal('游戏运行中') : (launching ? trGlobal('启动中…') : trGlobal('启动游戏')), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                       onPressed: launching || running || selected == null ? null : _launch,
                     ),
                   ),
                   const SizedBox(width: 6),
                   if (selected != null) FavoriteStar(gameDir: app.settings.gameDir, versionId: selected!, size: 24, color: Colors.white),
-                  IconButton(onPressed: _load, icon: const Icon(Icons.refresh, color: Colors.white), tooltip: '刷新版本列表'),
+                  IconButton(onPressed: _load, icon: const Icon(Icons.refresh, color: Colors.white), tooltip: trGlobal('刷新版本列表')),
                 ]),
               if (sel?.version != null) ...[
                 const SizedBox(height: 12),
-                Text('Minecraft ${sel!.version!.baseVersion}  ·  需要 Java ${sel.version!.requiredJava}+  ·  ${sel.version!.libraries.length} 个依赖库',
+                Text(trGlobal('Minecraft {0}  ·  需要 Java {1}+  ·  {2} 个依赖库', [sel!.version!.baseVersion, sel.version!.requiredJava, sel.version!.libraries.length]),
                     style: t.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.8))),
               ],
             ]),
@@ -237,33 +239,33 @@ class _HomePageState extends State<HomePage> {
           child: StatTile(
             icon: Icons.memory_rounded,
             value: '${(mem.usedMb / 1024).toStringAsFixed(1)} / ${(mem.totalMb / 1024).toStringAsFixed(0)} GB',
-            label: '内存占用 ${mem.loadPercent}%',
+            label: trGlobal('内存占用 {0}%', [mem.loadPercent]),
             progress: mem.loadPercent / 100,
             color: mem.loadPercent > 85 ? Colors.red : null,
           ),
         ),
         const SizedBox(width: 14),
-        Expanded(child: StatTile(icon: Icons.coffee_rounded, value: '${app.ctx.java.installs.length} 个', label: 'Java 运行时', color: Colors.orange)),
+        Expanded(child: StatTile(icon: Icons.coffee_rounded, value: trGlobal('{0} 个', [app.ctx.java.installs.length]), label: trGlobal('Java 运行时'), color: Colors.orange)),
         const SizedBox(width: 14),
-        Expanded(child: StatTile(icon: Icons.layers_rounded, value: '${versions.length} 个', label: '已安装版本', color: Colors.teal)),
+        Expanded(child: StatTile(icon: Icons.layers_rounded, value: trGlobal('{0} 个', [versions.length]), label: trGlobal('已安装版本'), color: Colors.teal)),
         const SizedBox(width: 14),
         Expanded(
           child: Card(
             child: InkWell(
               borderRadius: BorderRadius.circular(14),
               onTap: () async {
-                final r = await app.runTask('内存优化', (t) => Memory.optimize(pids: [?app.running?.pid], purgeStandby: app.settings.purgeStandbyMemory));
+                final r = await app.runTask(trGlobal('内存优化'), (t) => Memory.optimize(pids: [?app.running?.pid], purgeStandby: app.settings.purgeStandbyMemory));
                 if (r != null && context.mounted) {
-                  toast(context, '已整理 CML${app.running != null ? ' 与游戏' : ''} 的内存，可用内存增加约 ${r.freedMb} MB${r.standbyCleared ? '（含系统缓存）' : ''}');
+                  toast(context, trGlobal('已整理 CML{0} 的内存，可用内存增加约 {1} MB{2}', [app.running != null ? trGlobal(' 与游戏') : '', r.freedMb, r.standbyCleared ? trGlobal('（含系统缓存）') : '']));
                   setState(() {});
                 }
               },
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(16),
                 child: Row(children: [
                   Icon(Icons.auto_awesome_rounded, color: Colors.purple),
                   SizedBox(width: 12),
-                  Expanded(child: Text('一键内存优化', style: TextStyle(fontWeight: FontWeight.w700))),
+                  Expanded(child: Text(trGlobal('一键内存优化'), style: TextStyle(fontWeight: FontWeight.w700))),
                   Icon(Icons.chevron_right),
                 ]),
               ),
@@ -273,17 +275,17 @@ class _HomePageState extends State<HomePage> {
       ]),
       // ---------------- accounts ----------------
       Section(
-        title: '账号',
+        title: trGlobal('账号'),
         icon: Icons.account_circle_outlined,
-        subtitle: 'CML 仅支持 Microsoft 正版账号',
+        subtitle: trGlobal('CML 仅支持 Microsoft 正版账号'),
         actions: [
-          FilledButton.tonalIcon(icon: const Icon(Icons.add, size: 18), label: const Text('添加账号'), onPressed: () => showLoginDialog(context)),
+          FilledButton.tonalIcon(icon: const Icon(Icons.add, size: 18), label: Text(trGlobal('添加账号')), onPressed: () => showLoginDialog(context)),
         ],
         child: app.ctx.accounts.accounts.isEmpty
             ? Row(children: [
                 Icon(Icons.info_outline, size: 18, color: t.hintColor),
                 const SizedBox(width: 8),
-                const Expanded(child: Text('还没有登录账号。点击「添加账号」，在 microsoft.com/link 输入代码即可登录。')),
+                Expanded(child: Text(trGlobal('还没有登录账号。点击「添加账号」，在 microsoft.com/link 输入代码即可登录。'))),
               ])
             : Wrap(spacing: 12, runSpacing: 12, children: [
                 for (final a in app.ctx.accounts.accounts) _accountCard(context, app, a, a.uuid == acc?.uuid),
@@ -291,16 +293,16 @@ class _HomePageState extends State<HomePage> {
       ),
       if (running || app.gameLog.isNotEmpty)
         Section(
-          title: '游戏日志',
+          title: trGlobal('游戏日志'),
           icon: Icons.terminal_rounded,
           actions: [
             if (running)
               TextButton.icon(
                 style: TextButton.styleFrom(foregroundColor: cs.error),
                 icon: const Icon(Icons.stop_circle_outlined, size: 18),
-                label: const Text('结束游戏'),
+                label: Text(trGlobal('结束游戏')),
                 onPressed: () async {
-                  if (await confirm(context, '结束游戏', '强制结束游戏进程？未保存的进度会丢失。', danger: true)) app.running?.kill();
+                  if (await confirm(context, trGlobal('结束游戏'), trGlobal('强制结束游戏进程？未保存的进度会丢失。'), danger: true)) app.running?.kill();
                 },
               ),
           ],
@@ -355,9 +357,9 @@ class _HomePageState extends State<HomePage> {
               Text(a.name, style: const TextStyle(fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 3),
               Row(children: [
-                Pill(a.tokenValid ? '已登录' : '待刷新', color: a.tokenValid ? Colors.green : Colors.orange),
+                Pill(a.tokenValid ? trGlobal('已登录') : trGlobal('待刷新'), color: a.tokenValid ? Colors.green : Colors.orange),
                 const SizedBox(width: 4),
-                if (active) const Pill('当前'),
+                if (active) Pill(trGlobal('当前')),
               ]),
             ]),
           ),
@@ -365,19 +367,19 @@ class _HomePageState extends State<HomePage> {
             tooltip: '',
             icon: const Icon(Icons.more_horiz, size: 20),
             onSelected: (v) async {
-              if (v == 'remove' && await confirm(context, '移除账号', '确定移除 ${a.name}？', danger: true)) {
+              if (v == 'remove' && await confirm(context, trGlobal('移除账号'), trGlobal('确定移除 {0}？', [a.name]), danger: true)) {
                 app.ctx.accounts.remove(a.uuid);
                 await app.ctx.accounts.save();
                 app.changed();
               } else if (v == 'refresh') {
-                await app.runTask('刷新账号 ${a.name}', (t) async {
+                await app.runTask(trGlobal('刷新账号 {0}', [a.name]), (t) async {
                   final n = await app.ctx.auth.refresh(a);
                   app.ctx.accounts.upsert(n);
                   await app.ctx.accounts.save();
                 }, onError: (e) => toast(context, errText(e), error: true));
               }
             },
-            itemBuilder: (_) => const [PopupMenuItem(value: 'refresh', child: Text('刷新登录')), PopupMenuItem(value: 'remove', child: Text('移除'))],
+            itemBuilder: (_) => [PopupMenuItem(value: 'refresh', child: Text(trGlobal('刷新登录'))), PopupMenuItem(value: 'remove', child: Text(trGlobal('移除')))],
           ),
         ]),
       ),
@@ -410,9 +412,9 @@ class _FavoritesStripState extends State<_FavoritesStrip> {
     final folder = folders[folderIndex.clamp(0, folders.length - 1)];
     final local = {for (final v in widget.versions) Favorites.key(app.settings.gameDir, v.id): v};
     return Section(
-      title: '收藏',
+      title: trGlobal('收藏'),
       icon: Icons.star_rounded,
-      subtitle: '点击直接启动 · 右键版本可调整收藏夹',
+      subtitle: trGlobal('点击直接启动 · 右键版本可调整收藏夹'),
       actions: [
         if (folders.length > 1)
           for (var i = 0; i < folders.length; i++)
@@ -420,7 +422,7 @@ class _FavoritesStripState extends State<_FavoritesStrip> {
               padding: const EdgeInsets.only(left: 6),
               child: ChoiceChip(
                 avatar: Icon(favoriteIcon(folders[i]), size: 16, color: Color(folders[i].color)),
-                label: Text(folders[i].name),
+                label: Text(favoriteName(folders[i])),
                 selected: i == folderIndex.clamp(0, folders.length - 1),
                 onSelected: (_) => setState(() => folderIndex = i),
               ),
@@ -467,7 +469,7 @@ class _FavoritesStripState extends State<_FavoritesStrip> {
                           Text(id, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 2),
                           Text(
-                            other ? '其他目录 · ${p.basename(p.dirname(dir))}' : (v?.version == null ? '未找到' : [v!.version!.baseVersion, ...v.version!.loaders.map((l) => l.label)].join(' · ')),
+                            other ? trGlobal('其他目录 · {0}', [p.basename(p.dirname(dir))]) : (v?.version == null ? trGlobal('未找到') : [v!.version!.baseVersion, ...v.version!.loaders.map((l) => l.label)].join(' · ')),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: t.textTheme.bodySmall?.copyWith(color: t.hintColor),
