@@ -153,7 +153,7 @@ if (-not $SkipAddons) {
 
 if ($WithServers) {
   Invoke-Step "servers" {
-    $a = @("-ExecutionPolicy", "Bypass", "-File", "$rootuild-servers.ps1", "-Version", $Version)
+    $a = @("-ExecutionPolicy", "Bypass", "-File", (Join-Path $root "build-servers.ps1"), "-Version", $Version)
     if ($SkipTests) { $a += "-SkipTests" }
     powershell @a
     if ($LASTEXITCODE -ne 0) { throw "server build failed" }
