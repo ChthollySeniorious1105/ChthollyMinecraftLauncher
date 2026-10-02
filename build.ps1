@@ -4,16 +4,18 @@
 #   dist\CML\tools\netease\NeMcDecrypter.exe         NetEase Bedrock save decrypter
 #   dist\CML\tools\lumikeymapper\LumiKeyMapper.exe   key mapper (self-contained .NET)
 #   dist\CML\apps\runtime\electron.exe + apps\<desktoppet|liteeditor|litereader>\app
-#   dist\CMLS\cmls.exe                               multiplayer relay server (Java TCP + Bedrock UDP)
-#   dist\CML-<ver>-windows-x64.zip / dist\CMLS-<ver>-windows-x64.zip       main packages
+#   dist\CML-<ver>-windows-x64.zip                                          main package
 #   dist\CML-addon-<id>-<ver>.zip + dist\cml-addons.json                   optional add-ons (AI model weights)
+#
+# Servers (CMLS, Aurora, Pulse) are packaged only by build-servers.ps1 → dist\servers\.
+# Pass -WithServers to run it at the end of this script.
 #
 # Code signing (recommended — unsigned exes are often flagged by Defender's ML heuristics):
 #   $env:CML_SIGN_PFX = "D:\certs\cml.pfx"; $env:CML_SIGN_PASSWORD = "..."
 #   or $env:CML_SIGN_THUMBPRINT = "<cert in CurrentUser\My>"
 # Every exe/dll we build is signed with SHA-256 and an RFC 3161 timestamp.
 param(
-  [switch]$SkipTests, [switch]$NoZip, [switch]$SkipTools, [switch]$SkipApps, [switch]$SkipAddons,
+  [switch]$SkipTests, [switch]$NoZip, [switch]$SkipTools, [switch]$SkipApps, [switch]$SkipAddons, [switch]$WithServers,
   [string]$Version = "0.2.0", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
   # Pulse AI weights (not in git): base models and optional voices.
   [string]$PulseModels = "$PSScriptRoot\modules\pulse\client\native\models",
@@ -30,7 +32,7 @@ if (-not $env:FLUTTER_STORAGE_BASE_URL) { $env:FLUTTER_STORAGE_BASE_URL = "https
 
 $dist = Join-Path $root "dist"
 if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
-New-Item -ItemType Directory -Force -Path "$dist\CML", "$dist\CMLS" | Out-Null
+New-Item -ItemType Directory -Force -Path "$dist\CML" | Out-Null
 
 function Sign-Files([string[]]$files) {
   $pfx = $env:CML_SIGN_PFX; $thumb = $env:CML_SIGN_THUMBPRINT
@@ -54,12 +56,13 @@ Invoke-Step "core" {
   Pop-Location
 }
 
-Invoke-Step "CMLS" {
-  Push-Location "$root\server"; dart pub get
-  if (-not $SkipTests) { dart test; if ($LASTEXITCODE -ne 0) { throw "server tests failed" } }
-  dart compile exe bin\cmls.dart -o "$dist\CMLS\cmls.exe"
-  if ($LASTEXITCODE -ne 0) { throw "CMLS build failed" }
-  Pop-Location
+# CMLS shares core\ with the launcher, so its tests run here; the exe itself is built by build-servers.ps1.
+if (-not $SkipTests) {
+  Invoke-Step "CMLS tests" {
+    Push-Location "$root\server"; dart pub get
+    dart test; if ($LASTEXITCODE -ne 0) { throw "server tests failed" }
+    Pop-Location
+  }
 }
 
 Invoke-Step "launcher" {
@@ -113,14 +116,13 @@ if (-not $SkipApps) {
   }
 }
 
-$toSign = @("$dist\CML\cml.exe", "$dist\CMLS\cmls.exe", "$dist\CML\pulse_native.dll")
+$toSign = @("$dist\CML\cml.exe", "$dist\CML\pulse_native.dll")
 foreach ($f in @("$dist\CML\tools\bedrocktool\bedrocktool.exe", "$dist\CML\tools\lumikeymapper\LumiKeyMapper.exe")) { if (Test-Path $f) { $toSign += $f } }
 Sign-Files $toSign
 
 if (-not $NoZip) {
   Invoke-Step "zip" {
     Compress-Archive "$dist\CML\*" "$dist\CML-$Version-windows-x64.zip"
-    Compress-Archive "$dist\CMLS\*" "$dist\CMLS-$Version-windows-x64.zip"
   }
 }
 
@@ -146,6 +148,15 @@ if (-not $SkipAddons) {
     $v = Add-Addon "pulse-ai-voices" $PulseVoices "voices" "*.onnx"; if ($v) { $addons += $v }
     Remove-Item "$dist\addon-stage" -Recurse -Force -ErrorAction SilentlyContinue
     [IO.File]::WriteAllText("$dist\cml-addons.json", (@{ version = $Version; addons = $addons } | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding $false))
+  }
+}
+
+if ($WithServers) {
+  Invoke-Step "servers" {
+    $a = @("-ExecutionPolicy", "Bypass", "-File", "$rootuild-servers.ps1", "-Version", $Version)
+    if ($SkipTests) { $a += "-SkipTests" }
+    powershell @a
+    if ($LASTEXITCODE -ne 0) { throw "server build failed" }
   }
 }
 

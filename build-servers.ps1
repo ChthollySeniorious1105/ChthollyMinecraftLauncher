@@ -3,6 +3,7 @@
 #   Aurora  (modules/aurora/server  — party games server, needs modules/aurora/shared)
 #   Pulse   (modules/pulse/server   — text / voice chat server, needs modules/pulse/shared)
 #
+# The only place servers are built — build.ps1 does not output CMLS (run it with -WithServers to call this).
 # Output (dist\servers\):
 #   CMLS-<ver>-windows-x64.zip  / Aurora-server-<ver>-windows-x64.zip / Pulse-server-<ver>-windows-x64.zip   exe + start script
 #   CML-servers-src-<ver>.zip   source of all three servers (+ shared libs, core) — buildable with `dart compile exe`

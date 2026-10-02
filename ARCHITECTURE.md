@@ -16,7 +16,8 @@ Windows 桌面 Minecraft 启动器（参考 Plain Craft Launcher 的功能范围
 | `tools/lumikeymapper/` | LumiKeyMapper 键鼠映射（WPF / .NET 10，独立 exe） |
 | `apps/` | DesktopPet / LiteEditor / LiteReader（Electron），共用一份 `apps/runtime` Electron 运行时 |
 | `docs/THEME_BRIDGE.md` | CML → 外部应用的主题桥协议 |
-| `build.ps1` | 一键测试 + 构建 `dist\`（主包、CMLS、分包） |
+| `build.ps1` | 一键测试 + 构建 `dist\`（主包、分包；`-WithServers` 时顺带调用 `build-servers.ps1`） |
+| `build-servers.ps1` | 构建并打包 CMLS / Aurora / Pulse 服务端与源码 → `dist\servers\`（服务端只在这里构建） |
 
 ## core 模块划分（`core/lib/src/<模块>/`）
 
@@ -64,7 +65,7 @@ Windows 桌面 Minecraft 启动器（参考 Plain Craft Launcher 的功能范围
 | 文件 | 内容 |
 |---|---|
 | `CML-<ver>-windows-x64.zip` | 主程序：cml.exe、Flutter 运行时、pulse_native.dll（+Opus / ONNX Runtime / DirectML）、`tools\`、`apps\` |
-| `CMLS-<ver>-windows-x64.zip` | 联机中继服务端 |
+| `servers\CMLS-<ver>-windows-x64.zip` | 联机中继服务端（由 `build-servers.ps1` 生成，另有 Aurora / Pulse 服务端与 `CML-servers-src-<ver>.zip`） |
 | `CML-addon-pulse-ai-models-<ver>.zip` | 分包：Pulse AI 变声基础模型（HuBERT / RMVPE / RVC，约 810 MB） |
 | `CML-addon-pulse-ai-voices-<ver>.zip` | 分包（可选）：额外 RVC 音色 |
 | `cml-addons.json` | 分包清单 `{addons:[{id,version,asset,size,sha256}]}` |
@@ -208,7 +209,7 @@ cd launcher; flutter test test\i18n_test.dart   # 所有界面文字都有英文
 cd tools\bedrocktool; powershell -File build.ps1  # go test + 构建 + help 冒烟
 cd tools\lumikeymapper; powershell -File build.ps1
 powershell -File apps\build-apps.ps1
-powershell -File build.ps1 -Version <新版本>     # 全量：主包 + CMLS + 分包 + SHA256SUMS
+powershell -File build.ps1 -Version <新版本> -WithServers   # 全量：主包 + 分包 + 服务端（dist\servers\）+ SHA256SUMS
 ```
 
 手动验收：
@@ -242,7 +243,7 @@ powershell -File build.ps1 -Version <新版本>     # 全量：主包 + CMLS + �
 ## 9. 发布流程
 
 1. 按上面各节修改，并通过第 6 节的测试。
-2. 运行 `powershell -File build.ps1 -Version <x.y.z>`（打包 Pulse 模型时加 `-PulseModels`，音色包加 `-PulseVoices`）。
-3. 在 GitHub 创建 Release `v<x.y.z>`，上传 `dist\` 下的这些文件：`CML-<ver>-windows-x64.zip`、`CMLS-<ver>-windows-x64.zip`、`CML-addon-*.zip`、`cml-addons.json`、`SHA256SUMS.txt`。
+2. 运行 `powershell -File build.ps1 -Version <x.y.z> -WithServers`（打包 Pulse 模型时加 `-PulseModels`，音色包加 `-PulseVoices`）。
+3. 在 GitHub 创建 Release `v<x.y.z>`，上传 `dist\` 下的 `CML-<ver>-windows-x64.zip`、`CML-addon-*.zip`、`cml-addons.json`，以及 `dist\servers\` 下的 `CMLS-*`、`Aurora-server-*`、`Pulse-server-*`、`CML-servers-src-*` 四个 zip，再生成一份合并的 `SHA256SUMS.txt`。
 4. 用户端：CML 自更新只替换主程序；分包保存在 `%APPDATA%\CML\addons`，用户在「内置应用 → 管理分包」里按版本提示更新。
 5. 回滚：重新发布上一个版本的 Release 文件（BedrockTool 的回滚见 `PROTOCOL_UPDATE.md` 9.3 节）。
