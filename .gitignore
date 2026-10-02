@@ -37,3 +37,4 @@ apps/*/out/
 # test screenshots / temp
 launcher/build/
 tools/lumikeymapper/artifacts/
+tools/bedrocktool/.toolchain/
