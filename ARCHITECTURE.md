@@ -243,7 +243,7 @@ powershell -File build.ps1 -Version <新版本> -WithServers   # 全量：主包
 ## 9. 发布流程
 
 1. 按上面各节修改，并通过第 6 节的测试。
-2. 运行 `powershell -File build.ps1 -Version <x.y.z> -WithServers`（AI 分包默认从 `rvc`（模型）和 `rvcoice`（音色）打包，找不到会直接报错；可用 `-PulseModels` / `-PulseVoices` 改路径，或 `-SkipAddons` 跳过）。
+2. 运行 `powershell -File build.ps1 -Version <x.y.z> -WithServers`（AI 分包默认从 `rvc/`（模型）和 `rvc/voice/`（音色）打包，找不到会直接报错；可用 `-PulseModels` / `-PulseVoices` 改路径，或 `-SkipAddons` 跳过）。
 3. 在 GitHub 创建 Release `v<x.y.z>`，上传 `dist\` 下的 `CML-<ver>-windows-x64.zip`、`CML-addon-*.zip`、`cml-addons.json`，以及 `dist\servers\` 下的 `CMLS-*`、`Aurora-server-*`、`Pulse-server-*`、`CML-servers-src-*` 四个 zip，再生成一份合并的 `SHA256SUMS.txt`。
 4. 用户端：CML 自更新只替换主程序；分包保存在 `%APPDATA%\CML\addons`，用户在「内置应用 → 管理分包」里按版本提示更新。
 5. 回滚：重新发布上一个版本的 Release 文件（BedrockTool 的回滚见 `PROTOCOL_UPDATE.md` 9.3 节）。
