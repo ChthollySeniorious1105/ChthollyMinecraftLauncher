@@ -1,0 +1,18 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; user-select: none; font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; }
+#bar {
+    position: absolute; inset: 2px; display: flex; align-items: center; gap: 6px; padding: 0 6px 0 14px;
+    background: rgba(15, 23, 42, .92); border: 1px solid rgba(255, 255, 255, .14); border-radius: 20px; color: #e2e8f0;
+    -webkit-app-region: drag;
+}
+#dot { width: 10px; height: 10px; border-radius: 50%; background: #ef4444; animation: pulse 1.2s ease-in-out infinite; }
+.paused #dot { animation: none; background: #f59e0b; }
+@keyframes pulse { 50% { opacity: .3; } }
+#time { flex: 1; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+button {
+    -webkit-app-region: no-drag; height: 30px; min-width: 34px; border: 0; border-radius: 15px; cursor: pointer;
+    background: rgba(255, 255, 255, .1); color: #e2e8f0; font-size: 12px; font-weight: 700; padding: 0 10px;
+}
+button:hover { background: rgba(255, 255, 255, .2); }
+#stop { display: flex; align-items: center; gap: 6px; background: #dc2626; color: #fff; }
+#stop:hover { background: #b91c1c; }
+#stop i { width: 9px; height: 9px; border-radius: 2px; background: #fff; }

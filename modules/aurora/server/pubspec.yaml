@@ -1,0 +1,13 @@
+name: aurora_server
+description: Aurora game server.
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: ^3.9.0
+dependencies:
+  crypto: ^3.0.6
+  aurora_shared:
+    path: ../shared
+dev_dependencies:
+  lints: any
+  test: any

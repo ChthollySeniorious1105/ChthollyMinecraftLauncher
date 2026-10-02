@@ -1,0 +1,23 @@
+.pb-root { display: flex; gap: 18px; justify-content: center; align-items: flex-start; user-select: none; }
+.pb-root .pb-stage { position: relative; }
+.pb-root .pb-canvas { display: block; border-radius: 16px; box-shadow: 0 0 0 6px #6b3f24, 0 10px 28px rgba(0, 0, 0, .35); cursor: pointer; }
+.pb-root .pb-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(20, 10, 30, .45); border-radius: 16px; }
+.pb-root .pb-overlay.pb-hidden { display: none; }
+.pb-root .pb-card { background: var(--panel); border-radius: 14px; padding: 20px 26px; text-align: center; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); }
+.pb-root .pb-title { font-size: 20px; font-weight: 700; color: var(--accent-2); margin-bottom: 8px; }
+.pb-root .pb-sub { font-size: 13px; color: var(--muted); line-height: 1.7; margin-bottom: 12px; }
+.pb-root .pb-sub b { color: var(--accent); font-size: 22px; }
+.pb-root .pb-rec { color: #e5484d; font-weight: 700; }
+.pb-root .pb-side { width: 200px; display: flex; flex-direction: column; gap: 10px; }
+.pb-root .pb-row { display: flex; gap: 8px; }
+.pb-root .pb-row .pb-stat { flex: 1; }
+.pb-root .pb-stat { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; }
+.pb-root .pb-stat span { font-size: 12px; color: var(--muted); }
+.pb-root .pb-stat b { font-size: 22px; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+.pb-root .pb-msg { min-height: 40px; font-size: 13px; color: var(--accent); font-weight: 600; }
+.pb-root .pb-help { font-size: 12px; color: var(--muted); line-height: 2; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.pb-root kbd { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--field); font-size: 11px; text-align: center; color: var(--text); }
+.pb-root .pb-btns { display: flex; gap: 8px; }
+.pb-root .pb-btn { flex: 1; padding: 8px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--field); cursor: pointer; color: var(--text); }
+.pb-root .pb-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pb-root .pb-btn.pb-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); padding: 8px 26px; }

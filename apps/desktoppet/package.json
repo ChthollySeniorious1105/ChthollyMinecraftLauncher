@@ -1,0 +1,46 @@
+{
+  "name": "desktop-pet",
+  "productName": "DesktopPet",
+  "version": "1.0.0",
+  "description": "桌面宠物 - 小游戏 / 番茄钟 / 待办",
+  "main": "src/main.js",
+  "author": "DesktopPet",
+  "scripts": {
+    "start": "electron .",
+    "dist": "set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/&& set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/&& electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.desktoppet.app",
+    "productName": "DesktopPet",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "node_modules/uiohook-napi/**/*",
+      "node_modules/node-gyp-build/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "electronVersion": "44.4.5",
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "DesktopPet.exe"
+    },
+    "compression": "normal",
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**/*"
+    ],
+    "npmRebuild": false
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
+  }
+}

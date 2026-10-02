@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\LumiKeyMapper.ico</ApplicationIcon>
+    <AssemblyName>LumiKeyMapper</AssemblyName><Version>1.0.0</Version>
+    <Description>LumiKeyMapper — 为每个习惯，找到顺手的按键。</Description>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="..\LumiKeyMapper.Core\LumiKeyMapper.Core.csproj" /></ItemGroup>
+  <ItemGroup><Using Remove="System.Windows.Forms" /><Using Remove="System.Drawing" /></ItemGroup>
+</Project>

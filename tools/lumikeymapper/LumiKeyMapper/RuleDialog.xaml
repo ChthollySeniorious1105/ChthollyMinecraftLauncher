@@ -1,0 +1,124 @@
+<Window x:Class="LumiKeyMapper.RuleDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="clr-namespace:LumiKeyMapper.Controls"
+        Title="新建映射 · LumiKeyMapper" Style="{StaticResource LumiWindow}" Width="680" Height="780" MinWidth="600" MinHeight="520"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+  <Window.Resources>
+    <Storyboard x:Key="Enter">
+      <DoubleAnimation Storyboard.TargetName="Card" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.18"/>
+      <DoubleAnimation Storyboard.TargetName="CardShift" Storyboard.TargetProperty="Y" From="18" To="0" Duration="0:0:0.24"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+    </Storyboard>
+  </Window.Resources>
+  <Window.Triggers>
+    <EventTrigger RoutedEvent="Window.Loaded"><BeginStoryboard Storyboard="{StaticResource Enter}"/></EventTrigger>
+  </Window.Triggers>
+  <Border x:Name="Card" Margin="16" Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="12">
+    <Border.RenderTransform><TranslateTransform x:Name="CardShift"/></Border.RenderTransform>
+    <Border.Effect><DropShadowEffect BlurRadius="24" ShadowDepth="6" Opacity="0.25" Direction="270"/></Border.Effect>
+    <Grid>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+
+      <!-- Header (drag to move) -->
+      <Grid x:Name="Header" Background="Transparent" MouseLeftButtonDown="Header_MouseDown" Margin="28,22,16,0">
+        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel>
+          <TextBlock x:Name="Heading" Text="新建映射" Style="{StaticResource PageTitle}" FontSize="22"/>
+          <TextBlock x:Name="SubHeading" Text="选择原按键，再告诉它应该变成什么。" Style="{StaticResource MutedText}" FontSize="13" Margin="0,4,0,0"/>
+        </StackPanel>
+        <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="12" VerticalAlignment="Top" Click="Cancel_Click" ToolTip="关闭" AutomationProperties.Name="关闭"/>
+      </Grid>
+
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,18,0,0">
+        <StackPanel Margin="28,0,28,8">
+          <!-- Capture areas -->
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="56"/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <StackPanel>
+              <TextBlock Text="原按键" Style="{StaticResource FieldLabel}"/>
+              <controls:InputPicker x:Name="SourcePicker"/>
+            </StackPanel>
+            <Border Grid.Column="1" Width="34" Height="34" CornerRadius="17" Background="{DynamicResource AccentBrush}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,74,0,0">
+              <TextBlock Text="&#xE72A;" Style="{StaticResource Icon}" FontSize="14" Foreground="{DynamicResource OnAccentBrush}"/>
+            </Border>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="映射为" Style="{StaticResource FieldLabel}"/>
+              <controls:InputPicker x:Name="TargetPicker"/>
+            </StackPanel>
+          </Grid>
+
+          <!-- Scope -->
+          <TextBlock Text="生效范围" Style="{StaticResource FieldLabel}" Margin="0,22,0,8"/>
+          <Border Style="{StaticResource SegmentHost}" HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton x:Name="GlobalScope" Style="{StaticResource Segment}" GroupName="Scope" IsChecked="True" Checked="Scope_Changed" MinWidth="120" AutomationProperties.Name="全局">
+                <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE774;" Style="{StaticResource Icon}" FontSize="13" Margin="0,0,7,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/><TextBlock Text="全局" VerticalAlignment="Center"/></StackPanel>
+              </RadioButton>
+              <RadioButton x:Name="AppScope" Style="{StaticResource Segment}" GroupName="Scope" Checked="Scope_Changed" MinWidth="120" AutomationProperties.Name="指定应用">
+                <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE737;" Style="{StaticResource Icon}" FontSize="13" Margin="0,0,7,0" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"/><TextBlock Text="指定应用" VerticalAlignment="Center"/></StackPanel>
+              </RadioButton>
+            </StackPanel>
+          </Border>
+          <TextBlock x:Name="ScopeHint" Text="在任何前台应用中生效。" Style="{StaticResource MutedText}" Margin="2,8,0,0"/>
+
+          <!-- App picker -->
+          <Border x:Name="AppOptions" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,12,0,0" Visibility="Collapsed">
+            <StackPanel>
+              <TextBlock Text="从已打开的窗口选择" Style="{StaticResource FieldLabel}"/>
+              <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <ComboBox x:Name="WindowList" Tag="选择一个应用窗口…" Background="{DynamicResource SurfaceBrush}" SelectionChanged="WindowList_SelectionChanged" ToolTip="选择当前打开的应用窗口" AutomationProperties.Name="应用窗口">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding ProcessName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Title}" Foreground="{DynamicResource MutedBrush}" Margin="10,0,0,0" MaxWidth="320" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="&#xE72C;" Width="36" Height="36" Margin="8,0,0,0" Click="RefreshWindows_Click" ToolTip="刷新窗口列表" AutomationProperties.Name="刷新"/>
+              </Grid>
+              <Grid Margin="0,14,0,0">
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock Text="进程名称" Style="{StaticResource FieldLabel}"/>
+                  <TextBox x:Name="ProcessBox" Tag="如 notepad.exe" Background="{DynamicResource SurfaceBrush}" AutomationProperties.Name="进程名称"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="窗口标题包含（可选）" Style="{StaticResource FieldLabel}"/>
+                  <TextBox x:Name="TitleBox" Tag="留空表示该应用的所有窗口" Background="{DynamicResource SurfaceBrush}" AutomationProperties.Name="窗口标题包含"/>
+                </StackPanel>
+              </Grid>
+              <Button Content="使用所选窗口的当前标题" Click="UseTitle_Click" Style="{StaticResource LinkButton}" HorizontalAlignment="Right" FontSize="12" MinHeight="28" Margin="0,6,-10,-6"/>
+            </StackPanel>
+          </Border>
+
+          <!-- Name -->
+          <TextBlock Text="规则名称（可选）" Style="{StaticResource FieldLabel}" Margin="0,20,0,8"/>
+          <TextBox x:Name="NameBox" MaxLength="80" Tag="留空时显示为「原按键 → 目标」" AutomationProperties.Name="规则名称"/>
+
+          <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="8" Padding="12,10" Margin="0,18,0,0">
+            <DockPanel>
+              <TextBlock Text="&#xE946;" Style="{StaticResource Icon}" FontSize="14" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Top" Margin="0,2,10,0"/>
+              <TextBlock Text="应用规则只在目标窗口处于前台时生效，并优先于全局规则。录入与编辑期间，映射会暂时停用。" Style="{StaticResource MutedText}" Foreground="{DynamicResource TextBrush}"/>
+            </DockPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Footer -->
+      <Border Grid.Row="2" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Background="{DynamicResource BgBrush}" CornerRadius="0,0,12,12" Padding="28,14">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Content="取消" Click="Cancel_Click" MinWidth="88" Height="36" Margin="0,0,10,0"/>
+            <Button x:Name="SaveButton" Style="{StaticResource AccentButton}" Click="Save_Click" MinWidth="112" IsDefault="False">
+              <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE73E;" Style="{StaticResource Icon}" FontSize="12" Foreground="{DynamicResource OnAccentBrush}" Margin="0,0,8,0"/><TextBlock Text="保存映射" VerticalAlignment="Center"/></StackPanel>
+            </Button>
+          </StackPanel>
+          <StackPanel x:Name="ErrorPanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+            <TextBlock Text="&#xE783;" Style="{StaticResource Icon}" FontSize="14" Foreground="{DynamicResource DangerBrush}" Margin="0,0,8,0" VerticalAlignment="Top"/>
+            <TextBlock x:Name="ErrorText" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" MaxWidth="340" VerticalAlignment="Center"/>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

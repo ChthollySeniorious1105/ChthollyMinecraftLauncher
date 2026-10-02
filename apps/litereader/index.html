@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' app: media: blob: data:; script-src 'self' app: blob: 'wasm-unsafe-eval'; worker-src 'self' app: blob:; style-src 'self' app: media: blob: 'unsafe-inline'; img-src 'self' app: media: blob: data:; font-src 'self' app: media: blob: data:; media-src 'self' app: media: blob: data:; connect-src 'self' app: media: blob: data: ws: http://localhost:*; frame-src 'self' blob: data:; object-src 'none';">
+    <title>LiteReader</title>
+    <link rel="icon" href="./logo.svg">
+</head>
+<body>
+    <div id="app">
+        <header id="titlebar">
+            <div class="brand">
+                <img src="./logo.svg" alt="" class="brand-logo">
+                <span class="brand-name">LiteReader</span>
+            </div>
+            <div id="tabs" class="tabs"></div>
+            <div class="win-controls">
+                <button class="win-btn" data-win="minimize" title="最小化"></button>
+                <button class="win-btn" data-win="maximize" title="最大化"></button>
+                <button class="win-btn close" data-win="close" title="关闭"></button>
+            </div>
+        </header>
+        <div id="body">
+            <nav id="rail"></nav>
+            <main id="stage">
+                <section id="home" class="page"></section>
+                <section id="settings-page" class="page" hidden></section>
+                <section id="convert-page" class="page" hidden></section>
+                <div id="viewers"></div>
+            </main>
+        </div>
+        <div id="drop-mask" hidden>
+            <div class="drop-card">
+                <div class="drop-icon"></div>
+                <div class="drop-title">松开鼠标以打开文件</div>
+                <div class="drop-sub">支持电子书、文档、音乐、图片、压缩包与视频</div>
+            </div>
+        </div>
+        <div id="toasts"></div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -2,6 +2,10 @@ import 'package:flutter/widgets.dart';
 
 import 'core_en.dart';
 import 'strings_en.dart';
+import 'strings_en_bedrock.dart';
+import 'strings_en_modules.dart';
+import 'strings_en_multiplayer.dart';
+import 'strings_en_tools.dart';
 
 /// UI languages. Chinese source strings are the keys; other languages look them up.
 enum AppLanguage {
@@ -26,9 +30,20 @@ class I18n extends InheritedWidget {
   bool updateShouldNotify(I18n old) => old.language != language;
 }
 
+/// All English tables: the generated main table plus hand-maintained per-area tables.
+const englishTables = [stringsEn, stringsEnTools, stringsEnBedrock, stringsEnMultiplayer, stringsEnModules];
+
+String? englishFor(String zh) {
+  for (final t in englishTables) {
+    final v = t[zh];
+    if (v != null) return v;
+  }
+  return null;
+}
+
 /// Translates a Chinese source string, filling `{0}`, `{1}` … placeholders.
 String translate(AppLanguage lang, String zh, [List<Object?> args = const []]) {
-  var s = lang == AppLanguage.en ? (stringsEn[zh] ?? zh) : zh;
+  var s = lang == AppLanguage.en ? (englishFor(zh) ?? zh) : zh;
   for (var i = 0; i < args.length; i++) {
     s = s.replaceAll('{$i}', '${args[i]}');
   }

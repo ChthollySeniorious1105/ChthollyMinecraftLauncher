@@ -1,0 +1,21 @@
+// 外壳：主页、设置页；主题跟随 CML（通过临时 CML_THEME_FILE 切换浅色 / 深色）
+export default async ({ js, shot, wait, theme, log }) => {
+    await shot('home')
+    await js(`window.app.showPage('settings')`)
+    await shot('settings')
+    const rail = await js(`return [...document.querySelectorAll('#rail .rail-btn')].map(b => b.dataset.id).join(',')`)
+    log('rail', rail)
+    if (/theme/.test(rail)) throw new Error('侧栏仍有主题入口')
+    if (!(await js(`return document.body.innerText.includes('主题跟随 CML 启动器')`))) throw new Error('设置页缺少主题提示')
+    await theme('dark')
+    const v = await js(`return [document.documentElement.dataset.scheme, getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()].join(' ')`)
+    log('after dark theme:', v)
+    if (v !== 'dark #11141c') throw new Error('深色主题未生效：' + v)
+    await shot('settings-dark')
+    await js(`window.app.showPage('home')`)
+    await wait(300)
+    await shot('home-dark')
+    await theme('light')
+    const v2 = await js(`return document.documentElement.dataset.scheme`)
+    if (v2 !== 'light') throw new Error('浅色主题未恢复：' + v2)
+}

@@ -1,0 +1,38 @@
+.xq-root { display: flex; gap: 18px; justify-content: center; align-items: flex-start; padding-top: 4px; }
+.xq-root .xq-main { position: relative; }
+.xq-root .xq-board { display: block; border-radius: 14px; box-shadow: 0 8px 24px rgba(107, 63, 36, .25); }
+.xq-root .xq-banner {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  background: rgba(107, 63, 36, .92); color: #fff; font-size: 22px; font-weight: 700;
+  padding: 14px 28px; border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+  pointer-events: none; white-space: nowrap;
+}
+.xq-root .xq-hidden { display: none; }
+.xq-root .xq-side { width: 196px; display: flex; flex-direction: column; gap: 10px; }
+.xq-root .xq-seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--field); }
+.xq-root .xq-seg button { flex: 1; border: 0; background: none; padding: 7px 0; cursor: pointer; font-size: 13px; color: var(--text); }
+.xq-root .xq-seg button + button { border-left: 1px solid var(--line); }
+.xq-root .xq-seg button.xq-on { background: var(--accent); color: var(--on-accent); }
+.xq-root .xq-seg.xq-disabled { opacity: .45; pointer-events: none; }
+.xq-root .xq-status {
+  display: flex; align-items: center; gap: 8px; padding: 9px 10px; min-height: 40px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 13px;
+}
+.xq-root .xq-status em { color: #e5484d; font-style: normal; font-weight: 700; }
+.xq-root .xq-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; border: 2px solid #f3d7a4; }
+.xq-root .xq-dot.r { background: #c0392b; }
+.xq-root .xq-dot.b { background: #2b2b2b; }
+.xq-root .xq-btns { display: flex; gap: 8px; }
+.xq-root .xq-btn { flex: 1; padding: 8px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--field); cursor: pointer; color: var(--text); }
+.xq-root .xq-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.xq-root .xq-btn:disabled { opacity: .5; cursor: default; }
+.xq-root .xq-btn.xq-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.xq-root .xq-moves-t { font-size: 12px; color: var(--muted); }
+.xq-root .xq-moves {
+  margin: 0; padding: 6px 6px 6px 32px; height: 230px; overflow: auto; font-size: 13px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+}
+.xq-root .xq-moves li { padding: 2px 0; color: var(--muted); }
+.xq-root .xq-moves li span { display: inline-block; width: 64px; color: var(--text); }
+.xq-root .xq-moves li span:first-child { color: #c0392b; }
+.xq-root .xq-stats { font-size: 12px; color: var(--muted); }

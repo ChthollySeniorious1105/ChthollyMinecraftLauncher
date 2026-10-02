@@ -1,0 +1,16 @@
+
+> desktop-pet@1.0.0 dist
+> set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/&& set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/&& electron-builder --win portable
+
+  • electron-builder  version=26.15.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • skipped dependencies rebuild  reason=npmRebuild is set to false
+  • packaging       platform=win32 arch=x64 electron=44.4.5 appOutDir=dist\win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=D:\Server\Others\DesktopPet\dist\win-unpacked
+  • searching for node modules  pm=npm searchDir=D:\Server\Others\DesktopPet
+  • updating asar integrity executable resource  executablePath=dist\win-unpacked\DesktopPet.exe
+  • signing with signtool.exe  path=dist\win-unpacked\DesktopPet.exe
+  • building        target=portable file=dist\DesktopPet.exe archs=x64
+  • signing with signtool.exe  path=dist\win-unpacked\resources\elevate.exe
+  • signing with signtool.exe  path=dist\DesktopPet.exe

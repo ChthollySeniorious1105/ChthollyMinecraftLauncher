@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cml_core/cml_core.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,12 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
   final hostPassword = TextEditingController();
   final hostPort = TextEditingController();
   bool hostPublic = true;
+
+  /// `java` or `bedrock`.
+  String hostEdition = 'java';
+  final hostUdpPort = TextEditingController(text: '19132');
+  BedrockServerInfo? detectedBedrock;
+  bool hostPublicUdp = false;
   bool busy = false;
   List<RoomInfo> rooms = [];
 
@@ -103,7 +110,65 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     }
   }
 
+  /// Pings 127.0.0.1 on the entered port (and 19132 / 19133) for a Bedrock world / BDS.
+  Future<void> _detectBedrock() async {
+    setState(() => busy = true);
+    final p = int.tryParse(hostUdpPort.text.trim());
+    final found = await TunnelClient.detectLocalBedrock(ports: {?p, RakNet.defaultPort4, RakNet.defaultPort6}.toList());
+    if (!mounted) return;
+    setState(() {
+      busy = false;
+      detectedBedrock = found?.$1;
+      if (found != null) hostUdpPort.text = '${found.$2}';
+    });
+    if (found == null) {
+      toast(context, trGlobal('没有检测到本机的基岩版世界。请在基岩版中打开世界并在设置 → 多人游戏中开启「对局域网玩家可见」，或启动 BDS 后重试。'), error: true);
+    }
+  }
+
+  Future<void> _hostBedrock() async {
+    final app = App.read(context);
+    final port = int.tryParse(hostUdpPort.text.trim());
+    if (port == null || port <= 0 || port > 65535) {
+      toast(context, trGlobal('请填写有效的 UDP 端口'), error: true);
+      return;
+    }
+    setState(() => busy = true);
+    final info = await TunnelClient.pingBedrock(InternetAddress.loopbackIPv4, port);
+    if (info == null) {
+      if (mounted) {
+        setState(() => busy = false);
+        final go = await confirm(context, trGlobal('未检测到基岩版世界'), trGlobal('本机 UDP {0} 上没有响应。仍要创建房间吗？（游戏开启后朋友即可连接）', [port]), ok: trGlobal('仍然创建'));
+        if (!go || !mounted) return;
+        setState(() => busy = true);
+      } else {
+        return;
+      }
+    }
+    try {
+      final title = hostTitle.text.trim().isEmpty
+          ? ((info?.motd ?? '').isEmpty ? trGlobal('{0} 的世界', [app.ctx.accounts.selected?.name ?? trGlobal('玩家')]) : info!.motd)
+          : hostTitle.text.trim();
+      final room = await client!.hostBedrock(
+        title: title,
+        udpPort: port,
+        info: info,
+        password: hostPassword.text,
+        public: hostPublic,
+        publicUdp: hostPublicUdp,
+      );
+      _Session.status = trGlobal('正在主持基岩版房间 {0}（本地 UDP {1}）', [room, port]);
+      if (hostPublicUdp && client!.publicUdpPort == null && mounted) {
+        toast(context, trGlobal('服务器未开启公网 UDP 入口（或已被其他房间占用 / 房间设置了密码），仅 CML 玩家可加入'));
+      }
+    } catch (e) {
+      if (mounted) toast(context, errText(e), error: true);
+    }
+    if (mounted) setState(() => busy = false);
+  }
+
   Future<void> _host() async {
+    if (hostEdition == 'bedrock') return _hostBedrock();
     final app = App.read(context);
     setState(() => busy = true);
     var port = int.tryParse(hostPort.text.trim());
@@ -145,7 +210,7 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
     try {
       final port = await client!.join(code, password: pw);
       _Session.localPort = port;
-      _Session.status = trGlobal('已加入房间 {0}', [client!.room]);
+      _Session.status = client!.isBedrock ? trGlobal('已加入基岩版房间 {0}', [client!.room]) : trGlobal('已加入房间 {0}', [client!.room]);
     } catch (e) {
       if (mounted) toast(context, errText(e), error: true);
     }
@@ -234,7 +299,25 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
             OutlinedButton(onPressed: _leave, child: Text(c.isHost ? trGlobal('关闭房间') : trGlobal('离开'))),
           ],
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (!c.isHost && _Session.localPort != null) ...[
+            if (!c.isHost && _Session.localPort != null && c.isBedrock) ...[
+              Row(children: [
+                Pill(trGlobal('基岩版'), color: Colors.green),
+                const SizedBox(width: 8),
+                if (c.bedrockInfo?.version.isNotEmpty == true) Pill(c.bedrockInfo!.version),
+              ]),
+              const SizedBox(height: 8),
+              if (c.bedrockLanDiscoverable)
+                Text(trGlobal('打开基岩版 → 好友 → 局域网游戏中会出现该房间。如果没有出现，请在「服务器」页添加服务器：'))
+              else
+                Text(trGlobal('本机 UDP 19132 已被占用（可能有基岩版服务器或其他程序在运行），局域网游戏列表中不会出现该房间。请在基岩版「服务器」页添加服务器：')),
+              const SizedBox(height: 6),
+              Row(children: [
+                SelectableText(trGlobal('地址 127.0.0.1　端口 {0}', [_Session.localPort]), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.copy, size: 16), onPressed: () => Clipboard.setData(ClipboardData(text: '127.0.0.1:${_Session.localPort}'))),
+              ]),
+              const SizedBox(height: 8),
+            ],
+            if (!c.isHost && _Session.localPort != null && !c.isBedrock) ...[
               Text(trGlobal('房间已出现在 Minecraft「多人游戏」列表中（局域网世界）。如果没有出现，请手动添加服务器：')),
               const SizedBox(height: 6),
               Row(children: [
@@ -244,6 +327,20 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
               const SizedBox(height: 8),
             ],
             if (c.isHost) Text(trGlobal('把房间号发给朋友，他们在 CML 中连接同一个 CMLS 服务器并输入房间号即可加入。关闭 CML 或游戏世界后房间失效。')),
+            if (c.isHost && c.isBedrock) ...[
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                Pill(trGlobal('基岩版'), color: Colors.green),
+                Pill(trGlobal('本地 UDP {0}', [c.hostUdpPort])),
+                if (c.bedrockInfo?.version.isNotEmpty == true) Pill(c.bedrockInfo!.version),
+                if (c.publicUdpPort != null) Pill(trGlobal('公网 UDP {0}', [c.publicUdpPort]), color: Colors.orange),
+              ]),
+              if (c.publicUdpPort != null) ...[
+                const SizedBox(height: 6),
+                Text(trGlobal('没有 CML 的玩家也可以在基岩版「服务器」页添加 {0}，端口 {1}。注意：这等同于把你的世界公开到互联网，任何知道地址的人都能连接。',
+                    [TunnelClient.parseAddress(c.address).$1, c.publicUdpPort])),
+              ],
+            ],
             const SizedBox(height: 8),
             Wrap(spacing: 6, children: [for (final m in _Session.members) Chip(avatar: const Icon(Icons.person, size: 16), label: Text(m))]),
           ]),
@@ -253,13 +350,68 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
           title: trGlobal('创建房间（我来开服）'),
           icon: Icons.add_home_outlined,
           child: Column(children: [
-            Align(alignment: Alignment.centerLeft, child: Text(trGlobal('1. 启动游戏进入单人世界 → Esc →「对局域网开放」\n2. 回到这里点击「创建房间」，CML 会自动检测端口'))),
+            FieldRow(
+              trGlobal('游戏版本'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SegmentedButton<String>(
+                  segments: [
+                    ButtonSegment(value: 'java', icon: const Icon(Icons.coffee_outlined, size: 16), label: Text(trGlobal('Java 版'))),
+                    ButtonSegment(value: 'bedrock', icon: const Icon(Icons.grid_view_rounded, size: 16), label: Text(trGlobal('基岩版'))),
+                  ],
+                  selected: {hostEdition},
+                  onSelectionChanged: (v) => setState(() => hostEdition = v.first),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (hostEdition == 'java')
+              Align(alignment: Alignment.centerLeft, child: Text(trGlobal('1. 启动游戏进入单人世界 → Esc →「对局域网开放」\n2. 回到这里点击「创建房间」，CML 会自动检测端口')))
+            else ...[
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(trGlobal('1. 打开基岩版世界，在 设置 → 多人游戏 中开启「对局域网玩家可见」（或运行 BDS 基岩版服务器）\n2. 点击「检测」确认 UDP 端口（默认 19132），然后创建房间'))),
+              const SizedBox(height: 8),
+              FieldRow(
+                trGlobal('本地 UDP 端口'),
+                Row(children: [
+                  SizedBox(width: 120, child: TextField(controller: hostUdpPort, decoration: const InputDecoration(hintText: '19132'))),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(onPressed: busy ? null : _detectBedrock, icon: const Icon(Icons.radar, size: 16), label: Text(trGlobal('检测'))),
+                  const SizedBox(width: 12),
+                  if (detectedBedrock != null)
+                    Expanded(
+                      child: Wrap(spacing: 6, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                        Pill(detectedBedrock!.motd.isEmpty ? trGlobal('基岩版') : detectedBedrock!.motd, color: Colors.green),
+                        if (detectedBedrock!.version.isNotEmpty) Pill(detectedBedrock!.version),
+                        Pill(trGlobal('协议 {0}', [detectedBedrock!.protocol])),
+                        Pill(trGlobal('{0}/{1} 人', [detectedBedrock!.players, detectedBedrock!.maxPlayers])),
+                      ]),
+                    ),
+                ]),
+              ),
+              FieldRow(
+                trGlobal('公网直连'),
+                help: trGlobal('需服主开启 --public-udp；无密码房间才可用'),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Switch(value: hostPublicUdp, onChanged: (v) => setState(() => hostPublicUdp = v)),
+                ),
+              ),
+              if (hostPublicUdp)
+                Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(trGlobal('开启后没有 CML 的玩家也能直接用 CMLS 服务器地址连接你的世界，相当于把世界公开到互联网，请确认世界的权限设置。'),
+                        style: const TextStyle(fontSize: 12, color: Colors.orange))),
+            ],
             const SizedBox(height: 12),
             Row(children: [
               Expanded(child: TextField(controller: hostTitle, decoration: InputDecoration(labelText: trGlobal('房间名称（可选）')))),
               const SizedBox(width: 8),
-              SizedBox(width: 140, child: TextField(controller: hostPort, decoration: InputDecoration(labelText: trGlobal('端口（自动检测）')))),
-              const SizedBox(width: 8),
+              if (hostEdition == 'java') ...[
+                SizedBox(width: 140, child: TextField(controller: hostPort, decoration: InputDecoration(labelText: trGlobal('端口（自动检测）')))),
+                const SizedBox(width: 8),
+              ],
               SizedBox(width: 160, child: TextField(controller: hostPassword, obscureText: true, decoration: InputDecoration(labelText: trGlobal('房间密码（可选）')))),
               const SizedBox(width: 8),
               Row(children: [Checkbox(value: hostPublic, onChanged: (v) => setState(() => hostPublic = v!)), Text(trGlobal('公开'))]),
@@ -288,7 +440,11 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
                 ListTile(
                   dense: true,
                   leading: Icon(r.locked ? Icons.lock_outline : Icons.public),
-                  title: Text(r.title),
+                  title: Row(children: [
+                    Flexible(child: Text(r.title, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 8),
+                    Pill(r.isBedrock ? trGlobal('基岩版') : trGlobal('Java 版'), color: r.isBedrock ? Colors.green : null),
+                  ]),
                   subtitle: Text(trGlobal('{0} · 房主 {1} · {2} 人{3}', [r.room, r.host, r.players, r.version.isEmpty ? '' : ' · ${r.version}'])),
                   trailing: FilledButton.tonal(onPressed: busy ? null : () => _join(r.room, locked: r.locked), child: Text(trGlobal('加入'))),
                 ),
@@ -298,7 +454,12 @@ class _MultiplayerPageState extends State<MultiplayerPage> {
       Section(
         title: trGlobal('部署 CMLS'),
         icon: Icons.cloud_outlined,
-        child: Text(trGlobal('CMLS 是 CML 的联机中继服务端（cmls.exe），部署在任意有公网 IP 或内网穿透的机器上即可：\n  cmls.exe --port 25590 --name "我的联机服"\n首次启动会生成 server_identity.key（服务器身份，请备份勿外传）并显示服务器指纹。只需放行 / 映射 TCP 端口。')),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(trGlobal('CMLS 是 CML 的联机中继服务端（cmls.exe），部署在任意有公网 IP 或内网穿透的机器上即可：\n  cmls.exe --port 25590 --name "我的联机服"\n首次启动会生成 server_identity.key（服务器身份，请备份勿外传）并显示服务器指纹。只需放行 / 映射 TCP 端口。')),
+            const SizedBox(height: 8),
+            Text(trGlobal('基岩版房间同样只走这个 TCP 端口。可选：加 --public-udp 19132 开启基岩版公网入口，让没有 CML 的玩家直接添加服务器连接被公开的房间（需额外放行 UDP 端口，等同于公开房主的世界）。'),
+                style: const TextStyle(fontSize: 12)),
+          ]),
       ),
     ]);
   }

@@ -1,0 +1,14 @@
+name: pulse_server
+description: Pulse chat / voice server.
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: ^3.9.0
+dependencies:
+  cryptography: ^2.9.0
+  crypto: ^3.0.6
+  pulse_shared:
+    path: ../shared
+dev_dependencies:
+  lints: any
+  test: any

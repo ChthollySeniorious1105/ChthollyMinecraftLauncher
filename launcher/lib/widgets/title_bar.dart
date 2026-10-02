@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pulse_client/embed.dart' show PulseHost;
 import 'package:window_manager/window_manager.dart';
 
 import '../i18n/i18n.dart';
@@ -61,7 +62,7 @@ class _CmlTitleBarState extends State<CmlTitleBar> with WindowListener {
           tooltip: maximized ? trGlobal('还原') : trGlobal('最大化'),
           onTap: () async => maximized ? windowManager.unmaximize() : windowManager.maximize(),
         ),
-        _WinButton(icon: Icons.close_rounded, onTap: windowManager.close, tooltip: trGlobal('关闭'), danger: true, hoverColor: cml.gradientA),
+        _WinButton(icon: Icons.close_rounded, onTap: closeApp, tooltip: trGlobal('关闭'), danger: true, hoverColor: cml.gradientA),
       ]),
     );
   }
@@ -102,4 +103,10 @@ class _WinButtonState extends State<_WinButton> {
       ),
     );
   }
+}
+
+/// Closes CML; leaves Pulse voice cleanly first so the server sees the user go.
+Future<void> closeApp() async {
+  PulseHost.shutdown();
+  await windowManager.close();
 }

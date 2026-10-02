@@ -1,0 +1,140 @@
+{
+  "name": "liteeditor",
+  "productName": "LiteEditor",
+  "version": "1.1.0",
+  "description": "LiteEditor - 轻量全能编辑器：图像 / 几何画板 / 文档 / 表格 / 演示文稿 / 视频剪辑 / MIDI 编曲 / 截图录屏",
+  "main": "electron/main.js",
+  "type": "module",
+  "author": "LiteEditor",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "node scripts/prepare-assets.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "vite build",
+    "start": "vite build && electron .",
+    "dist": "vite build && electron-builder --win",
+    "smoke": "vite build && electron scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "vite": "^8.3.1"
+  },
+  "build": {
+    "appId": "com.liteeditor.app",
+    "productName": "LiteEditor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "LiteEditor"
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "psd",
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "bmp"
+        ],
+        "name": "LiteEditor Image",
+        "role": "Editor"
+      },
+      {
+        "ext": [
+          "lgeo"
+        ],
+        "name": "LiteEditor Geometry",
+        "role": "Editor"
+      },
+      {
+        "ext": [
+          "docx",
+          "tex",
+          "md",
+          "html",
+          "txt",
+          "ldoc"
+        ],
+        "name": "LiteEditor Document",
+        "role": "Editor"
+      },
+      {
+        "ext": [
+          "xlsx",
+          "xls",
+          "csv",
+          "ods",
+          "lsheet"
+        ],
+        "name": "LiteEditor Sheet",
+        "role": "Editor"
+      },
+      {
+        "ext": [
+          "lslide",
+          "pptx"
+        ],
+        "name": "LiteEditor Slides",
+        "role": "Editor"
+      },
+      {
+        "ext": [
+          "lvideo",
+          "mp4",
+          "webm",
+          "mkv",
+          "mov"
+        ],
+        "name": "LiteEditor Video",
+        "role": "Editor"
+      },
+      {
+        "ext": [
+          "mid",
+          "midi"
+        ],
+        "name": "LiteEditor MIDI",
+        "role": "Editor"
+      }
+    ]
+  },
+  "dependencies": {
+    "ag-psd": "^31.0.2",
+    "docx": "^9.8.0",
+    "jszip": "^3.10.2",
+    "katex": "^0.18.9",
+    "lucide": "^1.48.0",
+    "mammoth": "^1.13.0",
+    "marked": "^18.0.14",
+    "mediabunny": "^1.60.0",
+    "pptxgenjs": "^4.0.1",
+    "spessasynth_core": "^4.3.22",
+    "spessasynth_lib": "^4.3.14",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

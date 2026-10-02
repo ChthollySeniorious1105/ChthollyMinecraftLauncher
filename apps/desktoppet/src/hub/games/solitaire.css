@@ -1,0 +1,154 @@
+/* 纸牌接龙 — classic Windows Solitaire look, scoped under .sol-root */
+.sol-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 8px;
+  min-height: 100%;
+  box-sizing: border-box;
+  color: var(--text, #4a3426);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sol-root * { box-sizing: border-box; }
+.sol-root .hidden { display: none !important; }
+
+/* ---------- toolbar ---------- */
+.sol-root .sol-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.sol-root .sol-btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #ead9c3);
+  background: var(--field);
+  color: var(--text, #4a3426);
+  cursor: pointer;
+}
+.sol-root .sol-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.sol-root .sol-btn:disabled { opacity: 0.45; cursor: default; }
+.sol-root .sol-btn.sol-primary { background: var(--accent, #e8793a); border-color: var(--accent, #e8793a); color: var(--on-accent); }
+.sol-root .sol-btn.sol-auto.sol-ready {
+  background: #2e8b3e; border-color: #2e8b3e; color: #fff;
+  animation: sol-pulse 1.2s ease-in-out infinite;
+}
+@keyframes sol-pulse { 50% { box-shadow: 0 0 0 4px rgba(46, 139, 62, 0.25); } }
+.sol-root .sol-seg {
+  display: inline-flex;
+  background: var(--panel, #fffaf2);
+  border: 1px solid var(--line, #ead9c3);
+  border-radius: 999px;
+  padding: 3px;
+  margin-left: 6px;
+}
+.sol-root .sol-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--text, #4a3426);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.sol-root .sol-seg button:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.sol-root .sol-seg button.active { background: var(--accent, #e8793a); color: var(--on-accent); }
+
+/* ---------- felt table ---------- */
+.sol-root .sol-table {
+  position: relative;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.18) 85%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.025) 0 2px, transparent 2px 4px),
+    #0a7d2c;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), var(--shadow, 0 4px 14px rgba(0, 0, 0, 0.15));
+  touch-action: none;
+}
+.sol-root .sol-slot {
+  position: absolute;
+  width: 70px;
+  height: 98px;
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.25);
+}
+.sol-root .sol-slot-stock { cursor: pointer; color: rgba(160, 255, 160, 0.55); }
+.sol-root .sol-slot-stock svg { width: 40px; height: 40px; }
+.sol-root .sol-slot-stock.sol-empty-dead { color: rgba(0, 0, 0, 0.25); cursor: default; }
+.sol-root .sol-slot-found span {
+  font: bold 30px Georgia, 'Times New Roman', serif;
+  color: rgba(0, 0, 0, 0.2);
+}
+.sol-root .sol-slot.sol-hint { border-color: #ffe14d; box-shadow: 0 0 10px 2px rgba(255, 225, 77, 0.8); }
+
+/* ---------- cards ---------- */
+.sol-root .sol-card {
+  position: absolute;
+  width: 70px;
+  height: 98px;
+  border-radius: 5px;
+  transition: left 0.18s ease-out, top 0.18s ease-out;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: default;
+}
+.sol-root .sol-noanim .sol-card { transition: none; }
+.sol-root .sol-card.up { cursor: grab; }
+.sol-root .sol-card.sol-dragging {
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 4px 6px 10px rgba(0, 0, 0, 0.45);
+}
+.sol-root .sol-face,
+.sol-root .sol-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.22s ease-out;
+}
+.sol-root .sol-face svg,
+.sol-root .sol-back svg { display: block; width: 70px; height: 98px; pointer-events: none; }
+.sol-root .sol-face { transform: rotateY(180deg); }
+.sol-root .sol-back { transform: rotateY(0deg); }
+.sol-root .sol-card.up .sol-face { transform: rotateY(0deg); }
+.sol-root .sol-card.up .sol-back { transform: rotateY(-180deg); }
+.sol-root .sol-noanim .sol-face,
+.sol-root .sol-noanim .sol-back { transition: none; }
+.sol-root .sol-card.sol-hint {
+  box-shadow: 0 0 0 2px #ffe14d, 0 0 12px 3px rgba(255, 225, 77, 0.85);
+}
+
+/* ---------- win canvas ---------- */
+.sol-root .sol-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5000;
+  cursor: pointer;
+}
+
+/* ---------- status ---------- */
+.sol-root .sol-status {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted, #9b8472);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.sol-root .sol-status b { color: var(--accent-2, #6b3f24); font-variant-numeric: tabular-nums; }
+.sol-root .sol-rec { color: var(--muted, #9b8472); }

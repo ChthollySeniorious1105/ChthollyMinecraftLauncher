@@ -8,3 +8,32 @@ pubspec_overrides.yaml
 
 # local build artefacts
 launcher/tool/__pycache__/
+
+# integrated modules / tools / apps
+node_modules/
+apps/*/dist/
+apps/*/release/
+apps/*/public/vendor/
+apps/*/.tmp/
+apps/*/test-output/
+apps/desktoppet/test/userdata/
+apps/desktoppet/test/out/
+tools/*/bin/
+tools/*/obj/
+tools/*/*/bin/
+tools/*/*/obj/
+tools/*/out/
+tools/*/artifacts/
+modules/pulse/client/native/models/*.onnx
+modules/*/server/data/
+modules/*/server/*.exe
+**/server_identity.key
+**/.env
+/modules/aurora/server/words/
+modules/aurora/server/replays/
+apps/runtime/
+apps/*/out/
+
+# test screenshots / temp
+launcher/build/
+tools/lumikeymapper/artifacts/

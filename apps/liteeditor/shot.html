@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' app: blob: data:; script-src 'self' app:; style-src 'self' app: 'unsafe-inline'; img-src 'self' app: blob: data:;">
+    <title>截图</title>
+</head>
+<body>
+    <canvas id="bg"></canvas>
+    <canvas id="ov"></canvas>
+    <div id="bar" hidden></div>
+    <div id="tip">拖动选择区域 · 单击选择整屏 · 右键 / Esc 取消 · Enter 确认</div>
+    <script type="module" src="./src/shot/main.js"></script>
+</body>
+</html>

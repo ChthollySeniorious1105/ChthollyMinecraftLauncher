@@ -1,0 +1,178 @@
+/* 蜘蛛纸牌 — Windows Spider Solitaire look, scoped under .sp-root */
+.sp-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 8px;
+  min-height: 100%;
+  box-sizing: border-box;
+  color: var(--text, #4a3426);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sp-root * { box-sizing: border-box; }
+.sp-root .sp-hidden { display: none !important; }
+
+/* ---------- toolbar ---------- */
+.sp-root .sp-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.sp-root .sp-btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #ead9c3);
+  background: var(--field);
+  color: var(--text, #4a3426);
+  cursor: pointer;
+}
+.sp-root .sp-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.sp-root .sp-btn:disabled { opacity: 0.45; cursor: default; }
+.sp-root .sp-btn.sp-primary { background: var(--accent, #e8793a); border-color: var(--accent, #e8793a); color: var(--on-accent); }
+.sp-root .sp-seg {
+  display: inline-flex;
+  background: var(--panel, #fffaf2);
+  border: 1px solid var(--line, #ead9c3);
+  border-radius: 999px;
+  padding: 3px;
+  margin-left: 6px;
+}
+.sp-root .sp-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--text, #4a3426);
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.sp-root .sp-seg button:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.sp-root .sp-seg button.active { background: var(--accent, #e8793a); color: var(--on-accent); }
+
+/* ---------- felt table ---------- */
+.sp-root .sp-table {
+  position: relative;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.18) 85%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.025) 0 2px, transparent 2px 4px),
+    #0a7d2c;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), var(--shadow, 0 4px 14px rgba(0, 0, 0, 0.15));
+  touch-action: none;
+}
+.sp-root .sp-slot {
+  position: absolute;
+  width: 64px;
+  height: 90px;
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.26);
+  background: rgba(0, 0, 0, 0.08);
+}
+.sp-root .sp-slot-done { border-style: dashed; border-color: rgba(0, 0, 0, 0.18); background: rgba(0, 0, 0, 0.05); }
+.sp-root .sp-slot-stock { cursor: pointer; }
+.sp-root .sp-slot-stock.sp-empty { cursor: default; border-color: rgba(0, 0, 0, 0.14); background: transparent; }
+.sp-root .sp-slot.sp-hint { border-color: #ffe14d; box-shadow: 0 0 10px 2px rgba(255, 225, 77, 0.8); }
+
+/* ---------- cards ---------- */
+.sp-root .sp-card {
+  position: absolute;
+  width: 64px;
+  height: 90px;
+  border-radius: 5px;
+  transition: left 0.2s ease-out, top 0.2s ease-out;
+  transition-delay: var(--sp-d, 0s);
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: default;
+}
+.sp-root .sp-noanim .sp-card { transition: none; }
+.sp-root .sp-card.up { cursor: grab; }
+.sp-root .sp-card.sp-dragging {
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 4px 6px 10px rgba(0, 0, 0, 0.45);
+}
+.sp-root .sp-face,
+.sp-root .sp-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transition: transform 0.22s ease-out;
+  transition-delay: var(--sp-d, 0s);
+}
+.sp-root .sp-face svg,
+.sp-root .sp-back svg { display: block; width: 64px; height: 90px; pointer-events: none; }
+.sp-root .sp-face { transform: rotateY(180deg); }
+.sp-root .sp-back { transform: rotateY(0deg); }
+.sp-root .sp-card.up .sp-face { transform: rotateY(0deg); }
+.sp-root .sp-card.up .sp-back { transform: rotateY(-180deg); }
+.sp-root .sp-noanim .sp-face,
+.sp-root .sp-noanim .sp-back { transition: none; }
+.sp-root .sp-card.sp-hint {
+  box-shadow: 0 0 0 2px #ffe14d, 0 0 12px 3px rgba(255, 225, 77, 0.85);
+}
+.sp-root .sp-card.sp-shake { animation: sp-shake 0.3s ease-in-out; }
+@keyframes sp-shake {
+  20% { margin-left: -4px; }
+  40% { margin-left: 4px; }
+  60% { margin-left: -3px; }
+  80% { margin-left: 2px; }
+}
+
+/* ---------- win ---------- */
+.sp-root .sp-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5000;
+  cursor: pointer;
+}
+.sp-root .sp-win {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  z-index: 5001;
+  pointer-events: none;
+  text-align: center;
+  padding: 16px 28px;
+  border-radius: 16px;
+  background: rgba(255, 250, 242, 0.92);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  animation: sp-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.sp-root .sp-win-title {
+  font-size: 30px;
+  font-weight: bold;
+  color: var(--accent, #e8793a);
+  letter-spacing: 2px;
+  animation: sp-glow 1.4s ease-in-out infinite;
+}
+.sp-root .sp-win-sub { margin-top: 6px; font-size: 14px; color: var(--accent-2, #6b3f24); }
+.sp-root .sp-win-tip { margin-top: 6px; font-size: 12px; color: var(--muted, #9b8472); }
+@keyframes sp-pop {
+  from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+@keyframes sp-glow { 50% { text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, transparent); transform: scale(1.06); } }
+
+/* ---------- status ---------- */
+.sp-root .sp-status {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted, #9b8472);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.sp-root .sp-status b { color: var(--accent-2, #6b3f24); font-variant-numeric: tabular-nums; }
+.sp-root .sp-rec { color: var(--muted, #9b8472); }

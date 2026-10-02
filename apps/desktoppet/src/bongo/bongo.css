@@ -1,0 +1,51 @@
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; user-select: none; }
+#stage { position: relative; width: 100%; height: 100%; }
+#cat, #kb, #ex { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hidden { display: none; }
+
+/* floating key captions */
+#keys { position: absolute; left: 0; right: 0; top: 4%; height: 22%; pointer-events: none; display: flex; justify-content: center; align-items: flex-end; gap: 5px; }
+#keys span {
+  font: 700 13px/1 "Segoe UI", "Microsoft YaHei UI", sans-serif; color: #5b3a29;
+  background: rgba(255, 250, 242, .95); border: 1.5px solid #e2b48e; border-bottom-width: 3px;
+  border-radius: 7px; padding: 4px 8px; box-shadow: 0 3px 8px rgba(80, 40, 20, .25);
+  animation: keyIn .12s ease-out, keyOut .5s ease-in 1.1s forwards;
+}
+#keys span.combo { background: #fff0e0; border-color: #e8793a; color: #c0501a; }
+@keyframes keyIn { from { transform: translateY(8px) scale(.8); opacity: 0; } }
+@keyframes keyOut { to { transform: translateY(-10px); opacity: 0; } }
+
+/* drag handle only shows when the board accepts the mouse */
+#grip { position: absolute; left: 0; top: 0; right: 0; height: 30%; cursor: grab; }
+body.through #grip { display: none; }
+
+/* ---- cat animation hooks ---- */
+.paw { transition: transform .05s ease-out; }
+.blink { animation: blink 4.6s infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+.ear-l, .ear-r { transform-box: fill-box; transform-origin: 70% 90%; }
+.ear-l { animation: earL 7s infinite; }
+.ear-r { animation: earR 9s infinite 2s; }
+@keyframes earL { 0%, 90%, 100% { transform: rotate(0); } 93% { transform: rotate(-9deg); } 96% { transform: rotate(3deg); } }
+@keyframes earR { 0%, 88%, 100% { transform: rotate(0); } 91% { transform: rotate(10deg); } 94% { transform: rotate(-3deg); } }
+.tail { transform-box: view-box; transform-origin: 292px 206px; animation: tail 3.4s ease-in-out infinite; }
+@keyframes tail { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(10deg); } }
+.body { transform-box: view-box; transform-origin: 190px 220px; animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.012, .99); } }
+.bump { animation: bump .12s ease-out; }
+@keyframes bump { 50% { transform: translateY(2px) scale(1.01, .985); } }
+.fx-note { animation: note 1.2s ease-out forwards; }
+@keyframes note { from { opacity: 1; transform: translate(0, 0) scale(.7); } to { opacity: 0; transform: translate(var(--dx), -40px) scale(1.1); } }
+
+/* ---- keyboard mode ---- */
+.k rect.cap { transition: fill .08s, transform .06s; }
+.k.on rect.cap { fill: url(#kOn); }
+.k.on { transform: translateY(1.5px); }
+.k.on rect.glow { opacity: 1; }
+.k rect.glow { opacity: 0; transition: opacity .25s; }
+.k text { font: 600 10px "Segoe UI", "Microsoft YaHei UI", sans-serif; fill: #6b4a36; pointer-events: none; }
+.k.on text { fill: #fff; }
+.k text.small { font-size: 7.5px; }
+.m-btn.on { fill: url(#kOn); }
+.wheel-up, .wheel-down { opacity: 0; transition: opacity .2s; }
+.wheel-up.on, .wheel-down.on { opacity: 1; transition: none; }

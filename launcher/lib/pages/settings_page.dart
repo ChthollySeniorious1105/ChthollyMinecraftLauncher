@@ -6,7 +6,11 @@ import '../i18n/i18n.dart';
 
 import '../state.dart';
 import '../theme.dart';
+import '../widgets/theme_picker.dart';
 import '../widgets/common.dart';
+
+/// `--settings-section N` scrolls to section N on first open (screenshots / shortcuts).
+int? initialSettingsSection;
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -30,6 +34,14 @@ class _SettingsPageState extends State<SettingsPage> {
   int railIndex = 0;
   static List<String> get _names => ['Java', trGlobal('内存'), trGlobal('游戏'), trGlobal('下载'), trGlobal('账号'), trGlobal('外观'), trGlobal('启动器')];
   static const _icons = [Icons.coffee_outlined, Icons.memory_rounded, Icons.sports_esports_outlined, Icons.download_outlined, Icons.account_circle_outlined, Icons.palette_outlined, Icons.rocket_launch_outlined];
+
+  @override
+  void initState() {
+    super.initState();
+    final i = initialSettingsSection;
+    initialSettingsSection = null;
+    if (i != null) WidgetsBinding.instance.addPostFrameCallback((_) => _jump(i));
+  }
 
   List<Widget> _spaced(List<Widget> w) => [for (var i = 0; i < w.length; i++) ...[if (i > 0) const SizedBox(height: 18), w[i]]];
 
@@ -318,19 +330,16 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           FieldRow(
             trGlobal('主题'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final th in cmlThemes)
-                ChoiceChip(
-                  avatar: CircleAvatar(backgroundColor: th.seed, radius: 8),
-                  label: Text(trCore(th.name)),
-                  selected: s.theme == th.id,
-                  onSelected: (_) {
-                    s.theme = th.id;
-                    s.accentColor = null;
-                    app.saveSettings();
-                  },
-                ),
-            ]),
+            ThemePicker(
+              selected: s.theme,
+              dark: s.darkMode,
+              onSelected: (id) {
+                s.theme = id;
+                s.accentColor = null;
+                app.saveSettings();
+              },
+            ),
+            help: trGlobal('{0} 款主题，同时作用于 Aurora、Pulse 和内置应用', [cmlThemes.length]),
           ),
           SwitchRow(trGlobal('深色模式'), s.darkMode, (v) {
             s.darkMode = v;

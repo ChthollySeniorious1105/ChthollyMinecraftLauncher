@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cml/i18n/core_en.dart';
 import 'package:cml/i18n/i18n.dart';
-import 'package:cml/i18n/strings_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Extracts the first argument of every `trGlobal('…'` call in lib/.
@@ -18,13 +17,13 @@ Iterable<String> sourceKeys() sync* {
 
 void main() {
   test('every UI string has an English translation', () {
-    final missing = {for (final k in sourceKeys()) if (!stringsEn.containsKey(k)) k};
+    final missing = {for (final k in sourceKeys()) if (englishFor(k) == null) k};
     expect(missing, isEmpty, reason: 'run tool/i18n_realign.py + gen_strings_en.py');
   });
 
   test('placeholders survive translation', () {
     final ph = RegExp(r'\{\d\}');
-    for (final e in stringsEn.entries) {
+    for (final e in [for (final t in englishTables) ...t.entries]) {
       final a = ph.allMatches(e.key).map((m) => m[0]).toSet();
       final b = ph.allMatches(e.value).map((m) => m[0]).toSet();
       expect(b, a, reason: e.key);

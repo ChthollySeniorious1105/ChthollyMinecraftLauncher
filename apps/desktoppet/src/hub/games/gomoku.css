@@ -1,0 +1,142 @@
+.gk-root {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text);
+  user-select: none;
+}
+
+.gk-root .gk-board {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow), 0 0 0 2px #c08a4a;
+  line-height: 0;
+}
+.gk-root .gk-canvas { display: block; }
+
+.gk-root .gk-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  line-height: normal;
+  background: rgba(255, 250, 242, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 8px 6px 18px;
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  color: var(--accent-2);
+  transition: opacity .2s, transform .2s;
+}
+.gk-root .gk-banner.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(8px); }
+
+.gk-root .gk-side {
+  width: 188px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gk-root .gk-group { display: flex; flex-direction: column; gap: 4px; }
+.gk-root .gk-lbl { font-size: 12px; color: var(--muted); }
+
+.gk-root .gk-seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.gk-root .gk-seg button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 5px 4px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+}
+.gk-root .gk-seg button + button { border-left: 1px solid var(--line); }
+.gk-root .gk-seg button:hover { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+.gk-root .gk-seg button.active { background: var(--accent); color: var(--on-accent); }
+
+.gk-root.gk-pvp .gk-ai-only { display: none; }
+
+.gk-root .gk-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  min-height: 20px;
+}
+.gk-root .gk-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+}
+.gk-root .gk-dot.black { background: radial-gradient(circle at 35% 30%, #777, #111 70%); }
+.gk-root .gk-dot.white { background: radial-gradient(circle at 35% 30%, #fff, #cfc7ba 90%); }
+.gk-root .gk-dot.none { background: var(--line); box-shadow: none; }
+.gk-root.gk-thinking .gk-status-text { color: var(--accent); }
+.gk-root.gk-thinking .gk-dot { animation: gk-pulse .8s ease-in-out infinite alternate; }
+@keyframes gk-pulse { from { transform: scale(.8); } to { transform: scale(1.1); } }
+
+.gk-root .gk-info { font-size: 13px; color: var(--muted); }
+.gk-root .gk-info b { color: var(--accent-2); font-size: 16px; font-variant-numeric: tabular-nums; }
+
+.gk-root .gk-actions { display: flex; gap: 8px; }
+.gk-root .gk-actions .gk-btn { flex: 1; }
+
+.gk-root .gk-btn {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--accent-2);
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.gk-root .gk-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+.gk-root .gk-btn:disabled { opacity: .45; cursor: default; }
+.gk-root .gk-btn.gk-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.gk-root .gk-btn.gk-primary:hover { filter: brightness(1.06); background: var(--accent); }
+.gk-root .gk-banner .gk-btn { border-radius: 999px; }
+
+.gk-root .gk-stats table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.gk-root .gk-stats th,
+.gk-root .gk-stats td {
+  padding: 4px 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.gk-root .gk-stats th { color: var(--muted); font-weight: normal; border-bottom: 1px solid var(--line); }
+.gk-root .gk-stats td:first-child { text-align: left; }
+.gk-root .gk-stats tr.cur td { color: var(--accent); font-weight: 700; }
+
+.gk-root .gk-help { font-size: 12px; color: var(--muted); line-height: 1.5; }

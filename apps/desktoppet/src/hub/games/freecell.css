@@ -1,0 +1,162 @@
+/* 空当接龙 — classic Windows FreeCell look, scoped under .fc-root */
+.fc-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 8px;
+  min-height: 100%;
+  box-sizing: border-box;
+  color: var(--text, #4a3426);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fc-root * { box-sizing: border-box; }
+.fc-root .fc-hidden { display: none !important; }
+
+/* ---------- toolbar ---------- */
+.fc-root .fc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fc-root .fc-btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #ead9c3);
+  background: var(--field);
+  color: var(--text, #4a3426);
+  cursor: pointer;
+}
+.fc-root .fc-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.fc-root .fc-btn:disabled { opacity: 0.45; cursor: default; }
+.fc-root .fc-btn.fc-primary { background: var(--accent, #e8793a); border-color: var(--accent, #e8793a); color: var(--on-accent); }
+.fc-root .fc-btn.fc-primary:hover:not(:disabled) { filter: brightness(1.06); background: var(--accent, #e8793a); }
+.fc-root .fc-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  padding: 3px 3px 3px 12px;
+  background: var(--panel, #fffaf2);
+  border: 1px solid var(--line, #ead9c3);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--muted, #9b8472);
+}
+.fc-root .fc-num {
+  width: 82px;
+  font: inherit;
+  font-size: 13px;
+  padding: 3px 8px;
+  border: 1px solid var(--line, #ead9c3);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--text, #4a3426);
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.fc-root .fc-num:focus { border-color: var(--accent, #e8793a); }
+.fc-root .fc-pick .fc-btn { padding: 3px 12px; }
+
+/* ---------- felt table ---------- */
+.fc-root .fc-table {
+  position: relative;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.10), rgba(0, 0, 0, 0.18) 85%),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.025) 0 2px, transparent 2px 4px),
+    #0a7d2c;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), var(--shadow, 0 4px 14px rgba(0, 0, 0, 0.15));
+  touch-action: none;
+}
+.fc-root .fc-slot {
+  position: absolute;
+  width: 66px;
+  height: 92px;
+  border-radius: 6px;
+  border: 2px solid rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.25);
+}
+.fc-root .fc-slot-cell { background: rgba(0, 0, 0, 0.14); }
+.fc-root .fc-slot-found span {
+  font: bold 28px Georgia, 'Times New Roman', serif;
+  color: rgba(0, 0, 0, 0.2);
+}
+.fc-root .fc-slot-tab { border-style: dashed; border-color: rgba(0, 0, 0, 0.18); background: transparent; }
+
+/* ---------- cards ---------- */
+.fc-root .fc-card {
+  position: absolute;
+  width: 66px;
+  height: 92px;
+  border-radius: 5px;
+  transition: left 0.18s ease-out, top 0.18s ease-out;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+.fc-root .fc-noanim .fc-card { transition: none; }
+.fc-root .fc-card.fc-dragging {
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 4px 6px 10px rgba(0, 0, 0, 0.45);
+}
+.fc-root .fc-face { position: absolute; inset: 0; border-radius: 5px; overflow: hidden; }
+.fc-root .fc-face svg { display: block; width: 66px; height: 92px; pointer-events: none; }
+/* Windows-style selection: inverted card */
+.fc-root .fc-card.fc-sel .fc-face { filter: invert(1) hue-rotate(180deg); }
+.fc-root .fc-card.fc-sel { box-shadow: 0 0 0 2px #ffe14d, 1px 1px 3px rgba(0, 0, 0, 0.4); }
+
+/* ---------- no-moves overlay ---------- */
+.fc-root .fc-over {
+  position: absolute;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+.fc-root .fc-over-box {
+  background: var(--panel, #fffaf2);
+  border: 1px solid var(--line, #ead9c3);
+  border-radius: var(--radius, 14px);
+  box-shadow: var(--shadow, 0 4px 14px rgba(0, 0, 0, 0.2));
+  padding: 18px 22px;
+  text-align: center;
+  min-width: 260px;
+}
+.fc-root .fc-over-title { font-size: 18px; font-weight: bold; color: var(--accent-2, #6b3f24); }
+.fc-root .fc-over-text { margin: 6px 0 14px; font-size: 13px; color: var(--muted, #9b8472); }
+.fc-root .fc-over-btns { display: flex; gap: 8px; justify-content: center; }
+
+/* ---------- win canvas ---------- */
+.fc-root .fc-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5000;
+  cursor: pointer;
+}
+
+/* ---------- status ---------- */
+.fc-root .fc-status {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--muted, #9b8472);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fc-root .fc-status b { color: var(--accent-2, #6b3f24); font-variant-numeric: tabular-nums; }

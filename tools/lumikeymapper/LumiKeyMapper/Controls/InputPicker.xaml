@@ -1,0 +1,59 @@
+<UserControl x:Class="LumiKeyMapper.Controls.InputPicker" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <UserControl.Resources>
+    <Storyboard x:Key="Pulse" RepeatBehavior="Forever">
+      <DoubleAnimation Storyboard.TargetName="Ring" Storyboard.TargetProperty="Opacity" From="0.8" To="0" Duration="0:0:1.3"/>
+      <DoubleAnimation Storyboard.TargetName="RingScale" Storyboard.TargetProperty="ScaleX" From="1" To="1.05" Duration="0:0:1.3"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+      <DoubleAnimation Storyboard.TargetName="RingScale" Storyboard.TargetProperty="ScaleY" From="1" To="1.10" Duration="0:0:1.3"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+      <DoubleAnimation Storyboard.TargetName="Dot" Storyboard.TargetProperty="Opacity" From="1" To="0.2" Duration="0:0:0.65" AutoReverse="True"/>
+    </Storyboard>
+  </UserControl.Resources>
+  <StackPanel>
+    <Grid>
+      <!-- Halo that pulses outwards while recording -->
+      <Border x:Name="Ring" CornerRadius="12" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2" Opacity="0" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform><ScaleTransform x:Name="RingScale"/></Border.RenderTransform>
+      </Border>
+      <Button x:Name="RecordButton" Click="Record_Click" Height="132" Cursor="Hand" ToolTip="点击后，按下并松开一个键，或滚动鼠标滚轮" AutomationProperties.Name="录入按键" FocusVisualStyle="{x:Null}">
+        <Button.Template>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Area" CornerRadius="12" Background="{DynamicResource FieldBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1.5" SnapsToDevicePixels="True">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Area" Property="BorderBrush" Value="{DynamicResource KeyCapEdgeBrush}"/></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Area" Property="Background" Value="{DynamicResource PressedBrush}"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Area" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
+              <Trigger Property="Tag" Value="recording">
+                <Setter TargetName="Area" Property="Background" Value="{DynamicResource AccentSoftBrush}"/>
+                <Setter TargetName="Area" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Button.Template>
+        <Grid>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="13,11,0,0">
+            <Ellipse x:Name="Dot" Width="7" Height="7" Fill="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="0,0,7,0"/>
+            <TextBlock x:Name="StateText" Text="点击录入" FontSize="11" Foreground="{DynamicResource MutedBrush}"/>
+          </StackPanel>
+          <TextBlock x:Name="KindIcon" Style="{StaticResource Icon}" Text="&#xE765;" FontSize="14" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,13,0"/>
+          <StackPanel VerticalAlignment="Center" Margin="12,16,12,0">
+            <Border x:Name="Cap" Style="{StaticResource KeyCap}" HorizontalAlignment="Center" Padding="16,5" MinWidth="58">
+              <TextBlock x:Name="KeyLabel" Text="未设置" Style="{StaticResource KeyCapText}" FontSize="19"/>
+            </Border>
+            <TextBlock x:Name="RecordHint" Text="按键 · 鼠标按键 · 滚轮" FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,0" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Grid>
+      </Button>
+    </Grid>
+    <ComboBox x:Name="KeyList" Tag="或从列表选择…" SelectionChanged="KeyList_SelectionChanged" Margin="0,10,0,0" MaxDropDownHeight="280" AutomationProperties.Name="从列表选择按键">
+      <ComboBox.ItemTemplate>
+        <DataTemplate>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding Label}" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Category}" FontSize="11" Foreground="{DynamicResource MutedBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
+          </StackPanel>
+        </DataTemplate>
+      </ComboBox.ItemTemplate>
+    </ComboBox>
+  </StackPanel>
+</UserControl>

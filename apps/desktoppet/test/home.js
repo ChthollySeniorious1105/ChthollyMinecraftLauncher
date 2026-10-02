@@ -1,0 +1,23 @@
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const fs = require('fs');
+app.setPath('userData', path.join(__dirname, 'userdata'));
+require('../src/main.js');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const errors = [];
+app.on('web-contents-created', (_e, wc) => wc.on('console-message', e => { if (e.level === 'error') errors.push(e.message); }));
+app.whenReady().then(async () => {
+  await wait(2000);
+  ipcMain.emit('hub:open', {}, 'home');
+  await wait(1500);
+  const hub = BrowserWindow.getAllWindows().find(w => w.getBounds().width > 600);
+  const js = s => hub.webContents.executeJavaScript(s);
+  console.log('tiles', await js(`document.querySelectorAll('.home-tile').length`));
+  await js(`{ const s1 = document.querySelector('.home-search'); s1.value = '麻将'; s1.dispatchEvent(new Event('input')); } 1`);
+  console.log('search 麻将:', await js(`[...document.querySelectorAll('.home-tile')].filter(t => t.style.display !== 'none').map(t => t.querySelector('.ht-title').textContent).join(',')`));
+  await js(`{ const s2 = document.querySelector('.home-search'); s2.value = ''; s2.dispatchEvent(new Event('input')); } document.querySelector('.home-cats [data-c=game]').click(); 1`);
+  console.log('games:', await js(`[...document.querySelectorAll('.home-tile')].filter(t => t.style.display !== 'none').length`));
+  fs.writeFileSync(path.join(__dirname, 'out', 'home2.png'), (await hub.webContents.capturePage()).toPNG());
+  console.log('ERRORS:', errors.join('\n'));
+  app.exit(0);
+});

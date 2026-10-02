@@ -13,7 +13,7 @@ import '../tools/github_component.dart';
 /// swaps the folders and restarts it.
 class SelfUpdater extends GithubComponent {
   /// GitHub repository CML is published under; override with `--dart-define=CML_REPO=owner/name`.
-  static const defaultRepo = String.fromEnvironment('CML_REPO', defaultValue: 'chtholly-games/ChthollyMinecraftLauncher');
+  static const defaultRepo = String.fromEnvironment('CML_REPO', defaultValue: 'ChthollySeniorious1105/ChthollyMinecraftLauncher');
 
   /// Version of this build (`--dart-define=CML_VERSION=x.y.z`).
   static const currentVersion = String.fromEnvironment('CML_VERSION', defaultValue: '0.1.0');

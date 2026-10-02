@@ -1,0 +1,104 @@
+/* ========== MIDI 编曲 ========== */
+.editor-midi .e-stage.mi-stage { display: flex; flex-direction: column; }
+.editor-midi .e-panels { width: 256px; }
+
+/* 编排区：轨道列表 + 总览 */
+.mi-arrange { flex-shrink: 0; display: flex; min-height: 84px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.mi-arr-left { width: 232px; flex-shrink: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--surface); }
+.mi-arr-head { height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 4px 0 10px; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .04em; }
+.mi-arr-title { display: inline-flex; align-items: center; gap: 5px; }
+.mi-arr-head .icon-btn { width: 20px; height: 20px; border-radius: 5px; }
+.mi-tracklist { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.mi-tracklist::-webkit-scrollbar { display: none; }
+.mi-track {
+    height: 40px; box-sizing: border-box; display: flex; align-items: center; gap: 7px;
+    padding: 0 6px 0 0; border-bottom: 1px solid var(--line); cursor: default; position: relative;
+    transition: background .1s;
+}
+.mi-track:hover { background: var(--hover); }
+.mi-track.active { background: color-mix(in srgb, var(--c) 16%, transparent); }
+.mi-track.silent .mi-track-main { opacity: .45; }
+.mi-track.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.mi-track.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.mi-track-color { width: 4px; align-self: stretch; background: var(--c); flex-shrink: 0; }
+.mi-track.active .mi-track-color { width: 5px; }
+.mi-track-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.mi-track-name { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; min-width: 0; }
+.mi-track-idx { font-size: 10.5px; color: var(--text-3); font-weight: 500; font-variant-numeric: tabular-nums; min-width: 12px; }
+.mi-track-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-track-prog { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); padding: 0; min-width: 0; text-align: left; }
+.mi-track-prog:hover { color: var(--accent); }
+.mi-track-prog span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-track-ch { flex-shrink: 0; opacity: .75; }
+.mi-track-ch::before { content: "·"; margin-right: 4px; }
+.mi-track-btns { display: flex; gap: 3px; flex-shrink: 0; }
+.mi-ms { width: 20px; height: 18px; border-radius: 4px; font-size: 10.5px; font-weight: 700; color: var(--text-3); border: 1px solid var(--line-2); display: grid; place-items: center; }
+.mi-ms:hover { color: var(--text); background: var(--hover); }
+.mi-ms.on.m { background: #f59e0b; border-color: #f59e0b; color: #1f1300; }
+.mi-ms.on.s { background: #22c55e; border-color: #22c55e; color: #03210e; }
+.mi-ov-wrap { flex: 1; min-width: 0; position: relative; }
+.mi-ov { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+
+.mi-split { height: 5px; flex-shrink: 0; cursor: ns-resize; background: var(--surface-2); border-bottom: 1px solid var(--line); margin-top: -1px; position: relative; }
+.mi-split::after { content: ""; position: absolute; left: 50%; top: 1px; width: 36px; height: 3px; margin-left: -18px; border-radius: 2px; background: var(--line-2); }
+.mi-split:hover::after { background: var(--accent); }
+
+/* 钢琴卷帘 */
+.mi-roll {
+    --kbw: 64px;
+    flex: 1; min-height: 0; display: grid;
+    grid-template-columns: var(--kbw) 1fr;
+    grid-template-rows: 26px 1fr 84px;
+    background: var(--bg);
+}
+.mi-roll canvas { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; touch-action: none; }
+.mi-corner { grid-row: 1; grid-column: 1; background: var(--surface); border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+.mi-ruler { grid-row: 1; grid-column: 2; cursor: pointer; }
+.mi-kb { grid-row: 2; grid-column: 1; cursor: pointer; }
+.mi-grid { grid-row: 2; grid-column: 2; }
+.mi-vel-label { grid-row: 3; grid-column: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 7px; font-size: 11px; color: var(--text-3); background: var(--surface); border-top: 1px solid var(--line); border-right: 1px solid var(--line); }
+.mi-vel { grid-row: 3; grid-column: 2; cursor: ns-resize; }
+
+/* 工具栏 */
+.mi-play { width: 34px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--accent-grad); color: var(--on-accent); margin: 0 2px; box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent); transition: filter .12s, transform .12s; }
+.mi-play:hover { filter: brightness(1.08); }
+.mi-play:active { transform: scale(.96); }
+.mi-play.on { background: #f43f5e; color: #fff; box-shadow: 0 2px 8px rgb(244 63 94 / .35); }
+.editor-midi .tb-group .icon-btn.active { background: var(--accent-soft); color: var(--accent); }
+.mi-lcd {
+    display: flex; align-items: baseline; gap: 10px; height: 30px; padding: 0 12px; border-radius: 8px;
+    background: color-mix(in srgb, var(--bg) 80%, #000 20%); border: 1px solid var(--line-2);
+    font-family: "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; line-height: 30px;
+}
+[data-scheme=light] .mi-lcd { background: color-mix(in srgb, var(--surface) 70%, var(--bg)); }
+.mi-pos { font-size: 15px; font-weight: 700; color: var(--accent); min-width: 64px; }
+.mi-time { font-size: 12px; color: var(--text-3); min-width: 44px; }
+.mi-sig { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 26px; text-align: center; }
+.mi-snap, .mi-len { display: inline-flex; align-items: center; gap: 5px; }
+.mi-snap-label, .mi-len-label { min-width: 34px; }
+.mi-vol { width: 96px; display: flex; align-items: center; }
+.mi-vol .range { width: 100%; }
+.editor-midi .tb-group > .icon { color: var(--text-3); margin: 0 3px; }
+
+/* 右侧面板 */
+.mi-panel .ep-row > label { width: 44px; }
+.mi-panel .ep-row .range { flex: 1; min-width: 0; }
+.mi-panel .range-value { min-width: 34px; text-align: right; font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.mi-name { flex: 1; min-width: 0; text-align: left; }
+.mi-prog-btn { flex: 1; min-width: 0; justify-content: flex-start; border: 1px solid var(--line-2); background: var(--surface); }
+.mi-prog-btn span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.mi-track-actions { flex-wrap: wrap; gap: 4px; padding-top: 4px; }
+.mi-track-actions .tb-text-btn { padding: 0 8px; height: 26px; border: 1px solid var(--line-2); }
+.mi-track-actions .icon-btn { width: 26px; height: 26px; border-radius: 6px; }
+.mi-note-actions { gap: 4px; flex-wrap: wrap; }
+.mi-note-actions .tb-text-btn { padding: 0 8px; height: 26px; border: 1px solid var(--line-2); font-size: 12px; }
+.mi-panel-sub { font-size: 11.5px; color: var(--text-3); padding: 4px 0 2px; }
+.mi-help { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--text-2); }
+.mi-help-row { display: flex; align-items: center; gap: 8px; }
+.mi-help-row kbd { min-width: 82px; font: 11px "Cascadia Mono", Consolas, monospace; color: var(--text-3); }
+
+/* 导出进度 */
+.mi-progress { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 8px; }
+.mi-progress-label { font-size: 13px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.mi-progress-track { height: 8px; border-radius: 4px; background: var(--surface-3, var(--hover)); overflow: hidden; }
+.mi-progress-bar { width: 0; height: 100%; border-radius: 4px; background: var(--accent-grad); transition: width .15s; }

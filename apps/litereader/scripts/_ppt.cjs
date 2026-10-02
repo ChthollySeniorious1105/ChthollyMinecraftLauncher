@@ -1,0 +1,6 @@
+const X = require('xlsx'); const fs = require('fs')
+const buf = fs.readFileSync(process.argv[2])
+const cfb = X.CFB.read(buf, { type: 'buffer' })
+console.log(cfb.FullPaths.slice(0, 30))
+const f = X.CFB.find(cfb, 'PowerPoint Document')
+console.log('ppt doc size', f && f.content.length)

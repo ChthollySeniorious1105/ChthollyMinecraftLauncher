@@ -8,7 +8,10 @@ import 'package:window_manager/window_manager.dart';
 import 'i18n/i18n.dart';
 
 import 'pages/download_page.dart';
+import 'pages/apps_page.dart';
+import 'pages/bedrock_tools_page.dart';
 import 'pages/home_page.dart';
+import 'pages/modules_page.dart';
 import 'pages/multiplayer_page.dart';
 import 'pages/proxy_page.dart';
 import 'pages/saves_page.dart';
@@ -32,7 +35,10 @@ Future<void> main(List<String> args) async {
   _openLogin = args.contains('--login');
   final pi = args.indexOf('--page');
   if (pi >= 0 && pi + 1 < args.length) _startPage = int.tryParse(args[pi + 1]) ?? 0;
+  final si = args.indexOf('--settings-section');
+  if (si >= 0 && si + 1 < args.length) initialSettingsSection = int.tryParse(args[si + 1]);
   WidgetsFlutterBinding.ensureInitialized();
+  configurePulseModels();
   await windowManager.ensureInitialized();
   await windowManager.waitUntilReadyToShow(
     const WindowOptions(
@@ -63,6 +69,8 @@ class CmlApp extends StatelessWidget {
     final accent = s.accentColor == null ? null : Color(s.accentColor!);
     final lang = AppLanguage.fromCode(s.language);
     currentLanguage = lang;
+    final isDark = theme.isDark(s.darkMode);
+    ThemeBridge.publish(resolvePalette(theme, darkSetting: s.darkMode, accent: accent));
     // KeyedSubtree forces a full rebuild on language change: some strings live in
     // State fields and const-free lists that only re-read trGlobal when rebuilt.
     return KeyedSubtree(
@@ -74,7 +82,7 @@ class CmlApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: buildTheme(theme, dark: false, accent: accent),
           darkTheme: buildTheme(theme, dark: true, accent: accent),
-          themeMode: s.darkMode ? ThemeMode.dark : ThemeMode.light,
+          themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
           builder: (c, child) => MediaQuery(data: MediaQuery.of(c).copyWith(textScaler: TextScaler.linear(s.uiScale)), child: child!),
           home: app.ready ? const Shell() : const Scaffold(body: Center(child: CircularProgressIndicator())),
         ),
@@ -112,6 +120,10 @@ class _ShellState extends State<Shell> {
     _Dest(trGlobal('存档'), Icons.public_outlined, Icons.public, trGlobal('Java 版与基岩版存档管理、备份与转换'), () => const SavesPage()),
     _Dest(trGlobal('联机'), Icons.hub_outlined, Icons.hub, trGlobal('通过 CMLS 服务器安全地与朋友联机'), () => const MultiplayerPage()),
     _Dest(trGlobal('商店游戏'), Icons.sports_esports_outlined, Icons.sports_esports, trGlobal('基岩版、Legends、Dungeons 一键启动'), () => const StoreGamesPage()),
+    _Dest(trGlobal('基岩版工具'), Icons.terrain_outlined, Icons.terrain, trGlobal('BedrockTool 世界下载 / 皮肤 / 抓包，网易存档解密'), () => const BedrockToolsPage()),
+    _Dest(trGlobal('小游戏'), Icons.casino_outlined, Icons.casino, trGlobal('Aurora 联机小游戏：麻将、扑克、棋类、你画我猜等'), () => const AuroraPage()),
+    _Dest(trGlobal('语音聊天'), Icons.headset_mic_outlined, Icons.headset_mic, trGlobal('Pulse 文字 / 语音频道、降噪、变声与屏幕共享'), () => const PulsePage()),
+    _Dest(trGlobal('内置应用'), Icons.apps_outlined, Icons.apps, trGlobal('桌面宠物、轻量编辑器、轻量阅读器、键鼠映射'), () => const AppsPage()),
     _Dest(trGlobal('皮肤'), Icons.face_retouching_natural_outlined, Icons.face_retouching_natural, trGlobal('绘制皮肤、3D 预览、上传与披风切换'), () => const SkinPage()),
     _Dest(trGlobal('工具箱'), Icons.handyman_outlined, Icons.handyman, trGlobal('建筑文件转换、资源包转换、存档转换与内存优化'), () => const ToolsPage()),
     _Dest(trGlobal('网络代理'), Icons.shield_outlined, Icons.shield, trGlobal('内置 Clash Verge 代理（mihomo 内核）'), () => const ProxyPage()),
@@ -119,7 +131,7 @@ class _ShellState extends State<Shell> {
   ];
 
   /// Group headings shown above these indices in the sidebar.
-  static Map<int, String> get _groups => {0: trGlobal('游戏'), 5: trGlobal('扩展'), 8: trGlobal('系统')};
+  static Map<int, String> get _groups => {0: trGlobal('游戏'), 5: trGlobal('扩展'), 12: trGlobal('系统')};
 
   @override
   void initState() {

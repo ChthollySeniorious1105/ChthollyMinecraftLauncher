@@ -1,0 +1,44 @@
+/* ========== 数学虚拟键盘 ========== */
+.math-kb {
+    position: fixed; left: 50%; bottom: 12px; z-index: 3100;
+    width: min(760px, calc(100vw - 24px));
+    transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+    transition: transform .2s var(--ease), opacity .18s;
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: 16px;
+    box-shadow: var(--shadow-3); padding: 8px; user-select: none;
+}
+.math-kb.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.mk-head { display: flex; align-items: center; gap: 4px; padding: 0 2px 8px; }
+.mk-tabs { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: var(--surface-2); }
+.mk-tab { height: 26px; padding: 0 12px; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+.mk-tab:hover { color: var(--text); }
+.mk-tab.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-1); }
+.mk-flex { flex: 1; }
+.mk-body { display: flex; flex-direction: column; gap: 5px; }
+.mk-row { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 5px; }
+.mk-key {
+    height: 38px; min-width: 0; border-radius: 9px; padding: 0 4px;
+    display: grid; place-items: center;
+    background: var(--surface-2); border: 1px solid var(--line); border-bottom-width: 2px;
+    color: var(--text); font: 500 15px/1 "Cambria Math", "Times New Roman", var(--font-ui);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background .1s, transform .06s;
+}
+.mk-key:hover { background: var(--hover); }
+.mk-key:active { transform: translateY(1px); background: var(--press); }
+.mk-key.mk-num { background: var(--surface-3); font-family: var(--font-ui); font-weight: 600; }
+.mk-key.mk-op { color: var(--accent); font-weight: 700; }
+.mk-key.active { background: var(--accent-soft); color: var(--accent); }
+.mk-key.mk-ctrl { width: 36px; height: 30px; padding: 0; color: var(--text-2); }
+.mk-key.mk-enter { background: var(--accent-grad); color: var(--on-accent); border-color: transparent; }
+.mk-frac { display: flex; flex-direction: column; align-items: center; line-height: 1; font-size: 10px; }
+.mk-frac i:first-child { border-bottom: 1.5px solid currentColor; padding: 0 2px 1px; font-style: normal; }
+.mk-frac i:last-child { padding-top: 1px; font-style: normal; }
+
+.mk-field { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; }
+.mk-field > .input { flex: 1; padding-right: 32px; }
+.mk-toggle {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 24px; border-radius: 6px; display: grid; place-items: center; color: var(--text-3);
+}
+.mk-toggle:hover { background: var(--hover); color: var(--accent); }

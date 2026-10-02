@@ -1,0 +1,12 @@
+name: pulse_shared
+description: Pulse shared protocol and encrypted transport.
+version: 1.0.0
+publish_to: none
+environment:
+  sdk: ^3.9.0
+dependencies:
+  cryptography: ^2.9.0
+  crypto: ^3.0.6
+dev_dependencies:
+  test: any
+  lints: any

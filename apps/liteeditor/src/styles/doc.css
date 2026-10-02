@@ -1,0 +1,64 @@
+/* ========== 文字处理 ========== */
+.doc-stage { display: flex; background: color-mix(in srgb, var(--bg) 70%, var(--surface-2)); }
+.doc-scroller { flex: 1; min-width: 0; overflow: auto; padding: 28px 24px 60px; }
+.doc-paper { position: relative; margin: 0 auto; width: max-content; }
+.doc-page {
+    background: #fff; color: #111; box-sizing: border-box;
+    box-shadow: 0 2px 12px rgb(0 0 0 / .18), 0 0 0 1px rgb(0 0 0 / .05);
+    background-image: repeating-linear-gradient(transparent 0, transparent calc(var(--page-h, 1122.5px) - 1px), transparent calc(var(--page-h, 1122.5px) - 1px));
+}
+.doc-body { outline: none; min-height: 100%; caret-color: #2563eb; user-select: text; overflow-wrap: break-word; }
+.doc-body.painting { cursor: copy; }
+.doc-body ::selection { background: #bfdbfe; }
+.doc-body img.selected { outline: 2px solid #2563eb; outline-offset: 1px; }
+.doc-body .doc-math { cursor: pointer; border-radius: 3px; padding: 0 1px; }
+.doc-body .doc-math:hover { background: rgb(37 99 235 / .08); }
+.doc-body .doc-toc { cursor: default; user-select: none; }
+.doc-body .page-break { height: 14px !important; margin: 10px 0; border-top: 1px dashed #94a3b8; position: relative; }
+.doc-body .page-break::after { content: "分页符"; position: absolute; left: 50%; top: -9px; transform: translateX(-50%); background: #fff; padding: 0 8px; font-size: 11px; color: #94a3b8; font-family: var(--font-ui); }
+.doc-body mark.doc-find { background: #fde68a; color: inherit; border-radius: 2px; }
+.doc-body mark.doc-find.current { background: #f97316; color: #fff; }
+.doc-body li.task::before { cursor: pointer; }
+.doc-breaks { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
+.doc-break { position: absolute; left: -12px; right: -12px; height: 0; border-top: 10px solid color-mix(in srgb, var(--bg) 70%, var(--surface-2)); box-shadow: 0 -2px 6px rgb(0 0 0 / .12) inset; }
+.doc-break span { position: absolute; right: -2px; top: -8px; transform: translateX(100%); font-size: 11px; color: var(--text-3); font-family: var(--font-ui); white-space: nowrap; }
+.doc-pnum, .doc-phead { position: absolute; left: 0; right: 0; text-align: center; font-size: 11px; color: #94a3b8; font-family: var(--font-ui); }
+.doc-img-handle { position: absolute; width: 14px; height: 14px; border-radius: 3px; background: #2563eb; border: 2px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .35); cursor: nwse-resize; z-index: 5; }
+
+.doc-source {
+    flex: 1; min-width: 0; resize: none; border: 0; outline: none; padding: 20px 22px;
+    background: var(--surface); color: var(--text); border-left: 1px solid var(--line);
+    font: 13px/1.65 "Cascadia Mono", Consolas, monospace; tab-size: 4; white-space: pre; overflow: auto; user-select: text;
+}
+.doc-split .doc-scroller { flex: 1.1; }
+
+.editor-doc .e-panels { width: 240px; }
+.editor-doc .ep.grow { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.editor-doc .ep.grow .ep-body { flex: 1; overflow: auto; }
+.doc-outline .e-list-item { min-height: 28px; font-size: 12.5px; }
+.doc-outline .doc-ol-h1 { font-weight: 700; }
+.doc-outline .doc-ol-h2 { padding-left: 18px; }
+.doc-outline .doc-ol-h3 { padding-left: 30px; color: var(--text-2); }
+.doc-outline .doc-ol-h4 { padding-left: 42px; color: var(--text-3); }
+
+.doc-findbar {
+    position: absolute; right: 22px; top: 10px; z-index: 30; width: 380px;
+    display: flex; flex-direction: column; gap: 6px; padding: 8px 10px;
+    background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: var(--shadow-2);
+}
+.doc-find-row { display: flex; align-items: center; gap: 4px; }
+.doc-find-row .input { flex: 1; }
+.doc-find-row .icon-btn { width: 28px; height: 28px; }
+.doc-find-count { font-size: 12px; color: var(--text-3); min-width: 52px; text-align: right; padding-right: 4px; white-space: nowrap; }
+.doc-find-opts { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); padding-left: 20px; }
+.doc-find-opts label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+.doc-math-prev { min-height: 80px; display: grid; place-items: center; background: #fff; color: #111; border-radius: 10px; border: 1px solid var(--line-2); padding: 10px; font-size: 20px; overflow: auto; }
+.doc-inline-opt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); }
+.doc-symbols { display: flex; flex-direction: column; gap: 4px; max-height: 420px; overflow: auto; }
+.doc-sym-grid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; }
+.doc-sym { height: 30px; border-radius: 6px; font-size: 16px; }
+.doc-sym:hover { background: var(--accent-soft); color: var(--accent); }
+.doc-wc { width: 100%; border-collapse: collapse; font-size: 13px; }
+.doc-wc td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.doc-wc td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }

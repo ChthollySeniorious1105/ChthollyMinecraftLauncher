@@ -1,0 +1,170 @@
+{
+  "name": "litereader",
+  "productName": "LiteReader",
+  "version": "1.2.0",
+  "description": "LiteReader - 轻量全能阅读器：电子书 / 文档 / 演示文稿 / 网页 / LaTeX / 版式文档 / 音乐 / 图片 / 压缩包 / 视频，支持格式转换、打印与导出 PDF",
+  "main": "electron/main.js",
+  "type": "module",
+  "author": "LiteReader",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "node scripts/prepare-assets.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "vite build",
+    "start": "vite build && electron .",
+    "dist": "vite build && electron-builder --win",
+    "test:latex": "node scripts/test-latex.mjs",
+    "smoke": "vite build && electron scripts/smoke.mjs",
+    "test:convert": "vite build && electron scripts/test-convert.mjs",
+    "test:ui": "vite build && electron scripts/test-ui.mjs"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "djvu-rs": "^0.37.0",
+    "docx": "^9.8.0",
+    "docx-preview": "^0.4.1",
+    "foliate-js": "^1.0.1",
+    "highlight.js": "^11.12.0",
+    "jschardet": "^4.0.0",
+    "jszip": "^3.10.2",
+    "katex": "^0.18.9",
+    "libarchive.js": "^2.0.2",
+    "lucide": "^1.48.0",
+    "marked": "^18.0.14",
+    "music-metadata": "^11.16.1",
+    "pdfjs-dist": "^6.3.289",
+    "rtf.js": "^3.0.9",
+    "spessasynth_core": "^4.3.22",
+    "spessasynth_lib": "^4.3.14",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2",
+    "word-extractor": "^1.0.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "vite": "^8.3.1"
+  },
+  "build": {
+    "appId": "com.litereader.app",
+    "productName": "LiteReader",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "LiteReader"
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "epub",
+          "mobi",
+          "azw3",
+          "azw",
+          "fb2",
+          "cbz",
+          "pdf",
+          "docx",
+          "doc",
+          "xlsx",
+          "xls",
+          "csv",
+          "pptx",
+          "ppsx",
+          "html",
+          "htm",
+          "mht",
+          "tex",
+          "latex",
+          "ltx",
+          "txt",
+          "md",
+          "ppt",
+          "pps",
+          "odp",
+          "odt",
+          "rtf",
+          "ofd",
+          "xps",
+          "oxps",
+          "djvu",
+          "chm",
+          "xhtml"
+        ],
+        "name": "LiteReader Document",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "mp3",
+          "ogg",
+          "wav",
+          "flac",
+          "m4a",
+          "mid",
+          "midi"
+        ],
+        "name": "LiteReader Audio",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "png",
+          "jpg",
+          "jpeg",
+          "bmp",
+          "gif",
+          "webp"
+        ],
+        "name": "LiteReader Image",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "zip",
+          "7z",
+          "rar",
+          "tar",
+          "gz",
+          "cbr",
+          "cb7"
+        ],
+        "name": "LiteReader Archive",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "mp4",
+          "webm",
+          "mkv",
+          "mov"
+        ],
+        "name": "LiteReader Video",
+        "role": "Viewer"
+      }
+    ]
+  }
+}

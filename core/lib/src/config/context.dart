@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../addons/addons.dart';
 import '../auth/account_store.dart';
 import '../auth/microsoft.dart';
 import '../common/errors.dart';
@@ -48,6 +49,7 @@ class CmlContext {
   late final ChunkerTool chunker = ChunkerTool(http);
   late final ClashVergeApp clashVerge = ClashVergeApp(http);
   late final SelfUpdater updater = SelfUpdater(http);
+  late final AddonManager addons = AddonManager(http);
   final KnownServers knownServers = KnownServers();
   final Favorites favorites = Favorites();
 

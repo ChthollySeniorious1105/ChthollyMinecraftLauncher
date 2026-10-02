@@ -1,0 +1,96 @@
+name: ci-build
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Install SSH Key
+        if: ${{ env.SSH_PRIVATE_KEY != '' }}
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        if: ${{ env.REPO_KEY != '' }}
+        with:
+          packages: git-crypt xxd gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+          version: 1.0
+        env:
+          REPO_KEY: ${{ secrets.REPO_KEY }}
+
+      - name: Setup Golang with cache
+        uses: magnetikonline/action-golang-cache@v3
+        with:
+          go-version: ~1.25
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - run: |
+          git fetch --force --tags
+      
+      - name: decrypt
+        if: ${{ env.REPO_KEY != '' }}
+        run: |
+          echo ${REPO_KEY} | xxd -r -p > ../bedrock-repo-key.key
+          git status --porcelain
+          git-crypt unlock ../bedrock-repo-key.key
+          rm ../bedrock-repo-key.key
+        env:
+          REPO_KEY: ${{ secrets.REPO_KEY }}
+
+      - name: dependencies
+        run: |
+          go get ./cmd/bedrocktool
+          go install gioui.org/cmd/gogio@latest
+
+      - name: build
+        id: build
+        run: |
+          go run ./build.go windows,linux gui,cli
+
+      - name: Deploy with rsync
+        if: ${{ env.SSH_HOST != '' }}
+        run: rsync -avzO ./updates/ olebeck@${SSH_HOST}:/var/www/updates/
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+      
+      - name: 🏷️ Create/update tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ steps.build.outputs.release_tag }}',
+              sha: context.sha
+            }).catch(err => {
+              if (err.status !== 422) throw err;
+              github.rest.git.updateRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: 'tags/${{ steps.build.outputs.release_tag }}',
+                sha: context.sha
+              });
+            })
+
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: ./builds/*
+          bodyFile: changelog.txt
+          removeArtifacts: true
+          replacesArtifacts: true
+          allowUpdates: true
+          makeLatest:  ${{ steps.build.outputs.is_latest }}
+          tag: ${{ steps.build.outputs.release_tag }}

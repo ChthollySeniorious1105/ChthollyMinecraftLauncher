@@ -53,6 +53,11 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# Pulse native audio engine (pulse_native.dll) + runtime DLLs. The AI model weights are NOT
+# bundled: they ship as the optional "pulse-ai-models" add-on (see core/lib/src/addons).
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../modules/pulse/client/native" "${CMAKE_BINARY_DIR}/pulse_native")
+add_dependencies(${BINARY_NAME} pulse_native)
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
@@ -106,3 +111,7 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+install(FILES "$<TARGET_FILE:pulse_native>" ${PULSE_NATIVE_RUNTIME}
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
+install(DIRECTORY DESTINATION "${INSTALL_BUNDLE_LIB_DIR}/ai/providers" COMPONENT Runtime)

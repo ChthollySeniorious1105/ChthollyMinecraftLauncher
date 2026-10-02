@@ -44,3 +44,6 @@ export 'src/content/updater.dart';
 export 'src/content/exporter.dart';
 export 'src/game/instance_files.dart';
 export 'src/game/servers.dart';
+export 'src/addons/addons.dart';
+export 'src/bedrock/bedrocktool.dart';
+export 'src/bedrock/netease_saves.dart';

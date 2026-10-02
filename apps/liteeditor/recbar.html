@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' app:; script-src 'self' app:; style-src 'self' app: 'unsafe-inline';">
+    <title>录制控制</title>
+</head>
+<body>
+    <div id="bar">
+        <span id="dot"></span>
+        <span id="time">00:00</span>
+        <button id="pause" title="暂停 / 继续 (Ctrl+Alt+P)">❚❚</button>
+        <button id="stop" title="停止录制 (Ctrl+Alt+R)"><i></i>停止</button>
+    </div>
+    <script type="module" src="./src/shot/recbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; user-select: none; font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; }
+canvas { position: fixed; left: 0; top: 0; display: block; }
+#ov { cursor: crosshair; }
+#tip {
+    position: fixed; left: 50%; top: 24px; transform: translateX(-50%);
+    padding: 8px 16px; border-radius: 10px; background: rgba(15, 23, 42, .85); color: #e2e8f0; font-size: 13px; pointer-events: none;
+}
+#bar {
+    position: fixed; display: flex; align-items: center; gap: 2px; padding: 4px;
+    background: rgba(15, 23, 42, .94); border: 1px solid rgba(255, 255, 255, .12); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+}
+#bar button {
+    min-width: 30px; height: 30px; border: 0; border-radius: 7px; background: transparent; color: #e2e8f0; font-size: 15px; cursor: pointer; padding: 0 6px;
+}
+#bar button:hover { background: rgba(255, 255, 255, .1); }
+#bar button.on { background: rgba(59, 130, 246, .35); color: #fff; }
+#bar button.sw { min-width: 18px; width: 18px; height: 18px; border-radius: 50%; margin: 0 3px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .3); padding: 0; }
+#bar button.sw.on { box-shadow: 0 0 0 2px #fff; }
+#bar button.wide { font-size: 13px; padding: 0 10px; }
+#bar button.primary { background: #2563eb; color: #fff; font-size: 13px; padding: 0 12px; font-weight: 600; }
+#bar button.primary:hover { background: #1d4ed8; }
+#bar button.danger:hover { background: rgba(239, 68, 68, .3); }
+#bar i { width: 1px; height: 18px; background: rgba(255, 255, 255, .15); margin: 0 4px; }
+.shot-text { position: fixed; min-width: 160px; height: 28px; font: bold 20px "Microsoft YaHei UI", sans-serif; background: rgba(0, 0, 0, .35); border: 1px dashed #fff; outline: none; padding: 0 4px; }
