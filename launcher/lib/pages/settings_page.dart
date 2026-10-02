@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cml_core/cml_core.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +21,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  late final s = App.read(context).settings;
+  late final AppState _app = App.read(context);
+  late final s = _app.settings;
   late final jvm = TextEditingController(text: s.jvmArgs);
   late final game = TextEditingController(text: s.gameArgs);
   late final pre = TextEditingController(text: s.preLaunchCommand);
@@ -28,6 +31,8 @@ class _SettingsPageState extends State<SettingsPage> {
   late final clientId = TextEditingController(text: s.msaClientId);
   late final width = TextEditingController(text: s.windowWidth?.toString() ?? '');
   late final height = TextEditingController(text: s.windowHeight?.toString() ?? '');
+  late final _fields = [jvm, game, pre, cfKey, ghMirror, clientId, width, height];
+  Timer? _saveTimer;
   bool scanning = false;
   final scroll = ScrollController();
   final _keys = List.generate(7, (_) => GlobalKey());
@@ -38,6 +43,10 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    // Text fields auto-save (debounced) so edits survive leaving the page without pressing Enter.
+    for (final c in _fields) {
+      c.addListener(_scheduleSave);
+    }
     final i = initialSettingsSection;
     initialSettingsSection = null;
     if (i != null) WidgetsBinding.instance.addPostFrameCallback((_) => _jump(i));
@@ -66,11 +75,22 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   void dispose() {
+    if (_saveTimer?.isActive ?? false) _save();
+    _saveTimer?.cancel();
+    for (final c in _fields) {
+      c.dispose();
+    }
     scroll.dispose();
     super.dispose();
   }
 
+  void _scheduleSave() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(milliseconds: 500), _save);
+  }
+
   void _save() {
+    _saveTimer?.cancel();
     s
       ..jvmArgs = jvm.text.trim()
       ..gameArgs = game.text.trim()
@@ -80,7 +100,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ..msaClientId = clientId.text.trim()
       ..windowWidth = int.tryParse(width.text.trim())
       ..windowHeight = int.tryParse(height.text.trim());
-    App.read(context).saveSettings();
+    _app.saveSettings();
   }
 
   @override

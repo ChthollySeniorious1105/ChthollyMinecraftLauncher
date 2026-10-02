@@ -16,7 +16,7 @@
 # Every exe/dll we build is signed with SHA-256 and an RFC 3161 timestamp.
 param(
   [switch]$SkipTests, [switch]$NoZip, [switch]$SkipTools, [switch]$SkipApps, [switch]$SkipAddons, [switch]$WithServers,
-  [string]$Version = "0.2.0", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
+  [string]$Version = "0.2.1", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
   # Pulse AI weights (not in git): base models and optional voices.
   [string]$PulseModels = "$PSScriptRoot\modules\pulse\client\native\models",
   [string]$PulseVoices = ""
