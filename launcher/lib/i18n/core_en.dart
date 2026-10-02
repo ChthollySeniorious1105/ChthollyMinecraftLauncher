@@ -210,4 +210,8 @@ const coreEn = <String, String>{
   '音效文件按相同路径放入基岩版包；Java 与基岩版大部分音效路径一致，会直接替换原版音效': 'Sound files go into the Bedrock pack under the same paths; most sound paths match between Java and Bedrock, so they replace vanilla sounds directly',
   '预览版': 'Preview',
   '预览版（UWP）': 'Preview (UWP)',
+  '库缓存': 'library cache',
+  '游戏名称': 'game names',
+  '游玩记录': 'play history',
+  '隐藏列表与收藏夹': 'hidden list and collections',
 };

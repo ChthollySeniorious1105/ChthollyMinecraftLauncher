@@ -47,3 +47,4 @@ export 'src/game/servers.dart';
 export 'src/addons/addons.dart';
 export 'src/bedrock/bedrocktool.dart';
 export 'src/bedrock/netease_saves.dart';
+export 'src/steam/steam.dart';

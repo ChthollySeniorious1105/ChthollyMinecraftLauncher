@@ -17,6 +17,7 @@ import 'pages/proxy_page.dart';
 import 'pages/saves_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/skin_page.dart';
+import 'pages/steam_page.dart';
 import 'pages/store_games_page.dart';
 import 'pages/tools_page.dart';
 import 'pages/versions_page.dart';
@@ -120,6 +121,7 @@ class _ShellState extends State<Shell> {
     _Dest(trGlobal('存档'), Icons.public_outlined, Icons.public, trGlobal('Java 版与基岩版存档管理、备份与转换'), () => const SavesPage()),
     _Dest(trGlobal('联机'), Icons.hub_outlined, Icons.hub, trGlobal('通过 CMLS 服务器安全地与朋友联机'), () => const MultiplayerPage()),
     _Dest(trGlobal('商店游戏'), Icons.sports_esports_outlined, Icons.sports_esports, trGlobal('基岩版、Legends、Dungeons 一键启动'), () => const StoreGamesPage()),
+    _Dest(trGlobal('Steam 游戏'), Icons.videogame_asset_outlined, Icons.videogame_asset, trGlobal('本机 Steam 账号的游戏库：启动、安装、隐藏与收藏夹'), () => const SteamPage()),
     _Dest(trGlobal('基岩版工具'), Icons.terrain_outlined, Icons.terrain, trGlobal('BedrockTool 世界下载 / 皮肤 / 抓包，网易存档解密'), () => const BedrockToolsPage()),
     _Dest(trGlobal('小游戏'), Icons.casino_outlined, Icons.casino, trGlobal('Aurora 联机小游戏：麻将、扑克、棋类、你画我猜等'), () => const AuroraPage()),
     _Dest(trGlobal('语音聊天'), Icons.headset_mic_outlined, Icons.headset_mic, trGlobal('Pulse 文字 / 语音频道、降噪、变声与屏幕共享'), () => const PulsePage()),
@@ -131,7 +133,7 @@ class _ShellState extends State<Shell> {
   ];
 
   /// Group headings shown above these indices in the sidebar.
-  static Map<int, String> get _groups => {0: trGlobal('游戏'), 5: trGlobal('扩展'), 12: trGlobal('系统')};
+  static Map<int, String> get _groups => {0: trGlobal('游戏'), 5: trGlobal('扩展'), 13: trGlobal('系统')};
 
   @override
   void initState() {
