@@ -41,6 +41,8 @@ func (c *customBiome) String() string {
 	return c.name
 }
 
+// EncodeBiome returns the runtime ID the server assigned in BiomeDefinitionList. Returning a fixed
+// value made every unknown biome collide in the registry (e.g. 26.50's dappled_forest).
 func (c *customBiome) EncodeBiome() int {
-	return 0
+	return int(c.biome.BiomeID)
 }

@@ -114,11 +114,17 @@ func (w *worldsHandler) packetHandlerPreLogin(_pk packet.Packet, timeReceived ti
 					biomeName = sp[1]
 				}
 			}
-			_, ok := w.serverState.biomes.BiomeByName(biomeName)
-			if !ok {
-				w.serverState.biomes.Register(&customBiome{name: biomeName, biome: biome, pk: pk})
-				w.serverState.behaviorPack.AddBiome(biomeName, biome)
+			if _, ok := w.serverState.biomes.BiomeByName(biomeName); ok {
+				continue
 			}
+			// A biome this build doesn't know yet (new game version / custom). Keep the server's ID;
+			// skip it if that ID is already taken instead of aborting the whole session.
+			if _, taken := w.serverState.biomes.BiomeByID(int(biome.BiomeID)); taken {
+				logrus.Warnf("biome %s uses ID %d which is already registered, skipping", biomeName, biome.BiomeID)
+				continue
+			}
+			w.serverState.biomes.Register(&customBiome{name: biomeName, biome: biome, pk: pk})
+			w.serverState.behaviorPack.AddBiome(biomeName, biome)
 		}
 
 	}

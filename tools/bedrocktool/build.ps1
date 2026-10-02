@@ -27,7 +27,7 @@ param(
     [string]$GoVersion = '1.27.1',
     [string]$GoProxy = $(if ($env:GOPROXY) { $env:GOPROXY } else { 'https://goproxy.cn,https://proxy.golang.org,direct' }),
     [string]$ModCache = '',
-    [string]$Version = 'v26.52-cml',
+    [string]$Version = 'v26.52-cml2',
     [string]$Out = '',
     [switch]$SkipTests
 )
