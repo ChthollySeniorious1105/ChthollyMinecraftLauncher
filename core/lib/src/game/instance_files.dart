@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'launcher.dart';
+import 'crash.dart';
 
 class ScreenshotInfo {
   final File file;
@@ -79,14 +79,10 @@ abstract class InstanceFiles {
     }
   }
 
-  /// Crash cause for a log, using the launcher's analyzer plus a few crash-report specifics.
-  static String? diagnose(String text) {
-    final base = CrashAnalyzer.analyze(text);
-    if (base != null) return base;
-    final m = RegExp(r'Description: (.+)').firstMatch(text);
-    final culprit = RegExp(r'Suspected Mods?: (.+)').firstMatch(text)?.group(1);
-    if (culprit != null && culprit.trim() != 'NONE') return '疑似由以下 Mod 引起：${culprit.trim()}';
-    if (m != null) return '崩溃描述：${m.group(1)!.trim()}';
-    return null;
-  }
+  /// Crash cause for a log (one sentence).
+  static String? diagnose(String text) => CrashAnalyzer.analyze(text);
+
+  /// Full analysis of one log.
+  static CrashReport analyze(String text) => CrashAnalyzer.analyzeText(text);
+
 }

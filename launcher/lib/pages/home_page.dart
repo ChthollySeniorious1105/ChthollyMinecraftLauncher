@@ -9,6 +9,7 @@ import '../state.dart';
 import '../theme.dart';
 import '../widgets/account.dart';
 import '../widgets/common.dart';
+import '../widgets/crash_dialog.dart';
 import '../widgets/favorites.dart';
 
 class HomePage extends StatefulWidget {
@@ -84,27 +85,18 @@ class _HomePageState extends State<HomePage> {
     app.running = null;
     app.changed();
     if (code != 0 && mounted) {
-      final reason = gp.diagnose();
-      showDialog(
-        context: context,
-        builder: (c) => AlertDialog(
-          title: Text(trGlobal('游戏崩溃了')),
-          content: SizedBox(
-            width: 560,
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(trGlobal('退出码 {0}', [code])),
-              const SizedBox(height: 8),
-              Text(reason ?? trGlobal('未能自动判断原因，请查看日志。'), style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 220,
-                child: SingleChildScrollView(child: SelectableText(gp.tail.skip(gp.tail.length > 60 ? gp.tail.length - 60 : 0).join('\n'), style: const TextStyle(fontFamily: 'Consolas', fontSize: 11))),
-              ),
-            ]),
-          ),
-          actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(trGlobal('关闭')))],
-        ),
+      // the game directory this version actually ran in (isolated versions have their own)
+      final dir = app.ctx.gameDir;
+      final inst = await InstanceSettings.load(dir.instanceConfig(id));
+      final gameDir = dir.gameDirFor(id, isolated: inst.isolate ?? app.settings.isolateVersions);
+      final report = await CrashAnalyzer.analyzeCrash(
+        gameDir: gameDir,
+        modsDir: p.join(gameDir, 'mods'),
+        output: gp.tail,
+        since: gp.started,
+        exitCode: code,
       );
+      if (mounted) await showCrashDialog(context, report, gameDir: gameDir, versionId: id);
     }
   }
 

@@ -11,6 +11,7 @@ import '../i18n/i18n.dart';
 import '../state.dart';
 import 'account.dart';
 import 'common.dart';
+import 'crash_dialog.dart';
 
 // ============================================================== mod updates
 
@@ -319,6 +320,12 @@ class _LogsTabState extends State<LogsTab> {
     });
   }
 
+  /// Full analysis of the open log, with the version's mods for stack-trace attribution.
+  Future<void> _analyze() async {
+    final r = CrashAnalyzer.analyzeText(text, sources: [current!.file.path], mods: await CrashAnalyzer.modPackages(p.join(widget.gameDir, 'mods')));
+    if (mounted) await showCrashDialog(context, r, gameDir: widget.gameDir);
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context);
@@ -361,6 +368,12 @@ class _LogsTabState extends State<LogsTab> {
               IconButton(tooltip: trGlobal('在文件夹中显示'), icon: const Icon(Icons.folder_open, size: 18), onPressed: current == null ? null : () => revealInExplorer(current!.file.path)),
               IconButton(tooltip: trGlobal('用记事本打开'), icon: const Icon(Icons.open_in_new, size: 18), onPressed: current == null ? null : () => Process.start('notepad.exe', [current!.file.path])),
               IconButton(onPressed: _load, icon: const Icon(Icons.refresh, size: 18)),
+              const SizedBox(width: 4),
+              FilledButton.tonalIcon(
+                onPressed: current == null ? null : _analyze,
+                icon: const Icon(Icons.troubleshoot, size: 18),
+                label: Text(trGlobal('分析崩溃')),
+              ),
             ]),
           ),
           if (diagnosis != null)

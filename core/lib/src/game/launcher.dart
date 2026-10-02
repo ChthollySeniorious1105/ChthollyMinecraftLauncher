@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../common/errors.dart';
 import '../common/os.dart';
+import 'crash.dart';
 import 'game_dir.dart';
 import 'installer.dart';
 import 'version.dart';
@@ -269,34 +270,4 @@ class GameProcess {
 
   /// Crash analysis from the last log lines.
   String? diagnose() => CrashAnalyzer.analyze(tail.join('\n'));
-}
-
-/// Recognises common crash causes (subset of PCL's analyzer).
-abstract class CrashAnalyzer {
-  static String? analyze(String log) {
-    const rules = <(String, String)>[
-      ('java.lang.OutOfMemoryError', '内存不足：请增加分配给游戏的内存，或减少 Mod/光影。'),
-      ('UnsupportedClassVersionError', 'Java 版本过低：请在设置中选择更高版本的 Java。'),
-      ('has been compiled by a more recent version of the Java Runtime', 'Java 版本过低：请在设置中选择更高版本的 Java。'),
-      ('Could not reserve enough space', '内存分配过多或使用了 32 位 Java：请降低内存或改用 64 位 Java。'),
-      ('Pixel format not accelerated', '显卡驱动不支持 OpenGL：请更新显卡驱动。'),
-      ('GLFW error 65542', '显卡驱动不支持 OpenGL：请更新显卡驱动。'),
-      ('Couldn\'t set pixel format', '显卡驱动不支持 OpenGL：请更新显卡驱动。'),
-      ('Mixin apply failed', 'Mod 冲突（Mixin 注入失败）：请检查最近添加的 Mod。'),
-      ('DuplicateModsFoundException', '存在重复的 Mod：请删除 mods 文件夹中重复的文件。'),
-      ('Found duplicate mods', '存在重复的 Mod：请删除 mods 文件夹中重复的文件。'),
-      ('ModResolutionException', 'Mod 缺少前置或版本不兼容：请查看日志中提到的 Mod 依赖。'),
-      ('Incompatible mods found', 'Mod 版本不兼容：请查看日志中提到的 Mod。'),
-      ('MissingModsException', '缺少前置 Mod：请安装日志中提到的依赖。'),
-      ('java.lang.ClassNotFoundException', '游戏文件缺失或 Mod 与当前版本不兼容：请尝试补全文件。'),
-      ('Invalid session', '登录已失效：请重新登录微软账号。'),
-      ('Failed to verify username', '登录已失效：请重新登录微软账号。'),
-      ('EXCEPTION_ACCESS_VIOLATION', '原生代码崩溃：常见于显卡驱动或光影问题，请更新驱动或关闭光影。'),
-      ('The directory name is invalid', '游戏路径包含特殊字符：请把游戏移动到纯英文路径。'),
-    ];
-    for (final r in rules) {
-      if (log.contains(r.$1)) return r.$2;
-    }
-    return null;
-  }
 }

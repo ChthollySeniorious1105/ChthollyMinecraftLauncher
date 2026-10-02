@@ -15,7 +15,8 @@ class DownloadPage extends StatefulWidget {
 }
 
 class _DownloadPageState extends State<DownloadPage> with SingleTickerProviderStateMixin {
-  late final tabs = TabController(length: 7, vsync: this);
+  // a pending Mod search (from the crash dialog) opens on the Mod tab
+  late final tabs = TabController(length: 7, vsync: this, initialIndex: App.read(context).pendingModSearch != null ? 1 : 0);
 
   @override
   Widget build(BuildContext context) => Column(children: [
@@ -439,6 +440,14 @@ class _ContentTabState extends State<_ContentTab> with AutomaticKeepAliveClientM
   @override
   void initState() {
     super.initState();
+    if (widget.type == ContentType.mod) {
+      final app = App.read(context);
+      final q = app.pendingModSearch;
+      if (q != null) {
+        query.text = q;
+        app.pendingModSearch = null;
+      }
+    }
     _search();
   }
 

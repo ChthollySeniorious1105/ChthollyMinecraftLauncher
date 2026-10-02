@@ -97,8 +97,11 @@ class _Dest {
   final IconData icon;
   final IconData selectedIcon;
   final String subtitle;
-  final Widget Function() page;
-  const _Dest(this.label, this.icon, this.selectedIcon, this.subtitle, this.page);
+  final Widget Function() build;
+
+  /// Set for pages other widgets can navigate to (see [AppState.goTo]).
+  final AppPage? page;
+  const _Dest(this.label, this.icon, this.selectedIcon, this.subtitle, this.build, {this.page});
 }
 
 class Shell extends StatefulWidget {
@@ -115,9 +118,9 @@ class _ShellState extends State<Shell> {
   set index(int v) => _index = _keptIndex = v;
 
   static List<_Dest> get _dests => <_Dest>[
-    _Dest(trGlobal('启动'), Icons.rocket_launch_outlined, Icons.rocket_launch, trGlobal('选择版本，开始游戏'), () => const HomePage()),
-    _Dest(trGlobal('版本'), Icons.layers_outlined, Icons.layers, trGlobal('管理已安装的版本、Mod、资源包与光影'), () => const VersionsPage()),
-    _Dest(trGlobal('下载'), Icons.download_outlined, Icons.download, trGlobal('游戏、加载器、Mod、整合包、光影、资源包、数据包与 Java'), () => const DownloadPage()),
+    _Dest(trGlobal('启动'), Icons.rocket_launch_outlined, Icons.rocket_launch, trGlobal('选择版本，开始游戏'), () => const HomePage(), page: AppPage.home),
+    _Dest(trGlobal('版本'), Icons.layers_outlined, Icons.layers, trGlobal('管理已安装的版本、Mod、资源包与光影'), () => const VersionsPage(), page: AppPage.versions),
+    _Dest(trGlobal('下载'), Icons.download_outlined, Icons.download, trGlobal('游戏、加载器、Mod、整合包、光影、资源包、数据包与 Java'), () => const DownloadPage(), page: AppPage.download),
     _Dest(trGlobal('存档'), Icons.public_outlined, Icons.public, trGlobal('Java 版与基岩版存档管理、备份与转换'), () => const SavesPage()),
     _Dest(trGlobal('联机'), Icons.hub_outlined, Icons.hub, trGlobal('通过 CMLS 服务器安全地与朋友联机'), () => const MultiplayerPage()),
     _Dest(trGlobal('商店游戏'), Icons.sports_esports_outlined, Icons.sports_esports, trGlobal('基岩版、Legends、Dungeons 一键启动'), () => const StoreGamesPage()),
@@ -129,11 +132,27 @@ class _ShellState extends State<Shell> {
     _Dest(trGlobal('皮肤'), Icons.face_retouching_natural_outlined, Icons.face_retouching_natural, trGlobal('绘制皮肤、3D 预览、上传与披风切换'), () => const SkinPage()),
     _Dest(trGlobal('工具箱'), Icons.handyman_outlined, Icons.handyman, trGlobal('建筑文件转换、资源包转换、存档转换与内存优化'), () => const ToolsPage()),
     _Dest(trGlobal('网络代理'), Icons.shield_outlined, Icons.shield, trGlobal('内置 Clash Verge 代理（mihomo 内核）'), () => const ProxyPage()),
-    _Dest(trGlobal('设置'), Icons.tune_outlined, Icons.tune, trGlobal('Java、内存、下载源、账号与外观'), () => const SettingsPage()),
+    _Dest(trGlobal('设置'), Icons.tune_outlined, Icons.tune, trGlobal('Java、内存、下载源、账号与外观'), () => const SettingsPage(), page: AppPage.settings),
   ];
 
   /// Group headings shown above these indices in the sidebar.
   static Map<int, String> get _groups => {0: trGlobal('游戏'), 5: trGlobal('扩展'), 13: trGlobal('系统')};
+
+  void _onNav() {
+    final page = App.read(context).navRequest.value;
+    if (page == null || !mounted) return;
+    App.read(context).navRequest.value = null;
+    final i = _dests.indexWhere((d) => d.page == page);
+    if (i >= 0) setState(() => index = i);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final n = App.read(context).navRequest;
+    n.removeListener(_onNav);
+    n.addListener(_onNav);
+  }
 
   @override
   void initState() {
@@ -279,7 +298,7 @@ class _ShellState extends State<Shell> {
                         opacity: a,
                         child: SlideTransition(position: Tween(begin: const Offset(0, 0.015), end: Offset.zero).animate(a), child: child),
                       ),
-                      child: KeyedSubtree(key: ValueKey(index), child: dest.page()),
+                      child: KeyedSubtree(key: ValueKey(index), child: dest.build()),
                     ),
                   ),
                 ]),

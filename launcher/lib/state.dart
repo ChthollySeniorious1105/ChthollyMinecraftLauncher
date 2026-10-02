@@ -11,6 +11,13 @@ class AppState extends ChangeNotifier {
   final List<Task> tasks = [];
   final List<String> gameLog = [];
   GameProcess? running;
+
+  /// Page the shell should switch to; set by [goTo], consumed by the shell.
+  final ValueNotifier<AppPage?> navRequest = ValueNotifier(null);
+  void goTo(AppPage page) => navRequest.value = page;
+
+  /// Pre-filled query for the download page's Mod search (crash dialog → "install missing mod").
+  String? pendingModSearch;
   bool ready = false;
   String? initError;
 
@@ -148,3 +155,6 @@ Future<String?> prompt(BuildContext context, String title, {String initial = '',
     ),
   );
 }
+
+/// Pages other widgets can jump to. The shell maps each to its sidebar entry.
+enum AppPage { home, versions, download, settings }
