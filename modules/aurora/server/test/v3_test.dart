@@ -241,6 +241,55 @@ void main() {
     expect((server.rooms.values.first.engine as CountGame).moves.length, 2, reason: 'no auto move after turning off');
   });
 
+  test('same name + same ip without token resumes the identity and takes 托管 off', () async {
+    final (a, b, rid) = await twoPlayers();
+    final id = server.rooms[rid]!.seats[0].client!.id;
+    a.send({'t': 'auto_play', 'on': true});
+    await b.wait((m) => m['t'] == Msg.room && (m['room']['seats'] as List)[0]['auto'] == true);
+    a.s.destroy(); // e.g. browser reloaded: token lost
+    b.clear();
+    await b.wait((m) => m['t'] == Msg.room && ((m['room']['seats'] as List)[0]['client'] as Map)['online'] == false);
+    final a2 = TClient();
+    await a2.connect(port);
+    a2.send({'t': 'hello', 'ver': kProtocolVersion, 'name': '甲', 'avatar': 3, 'token': '', 'uid': 'uid-a'});
+    final w = await a2.waitT(Msg.welcome);
+    expect(w['id'], id, reason: 'same person, not a new client');
+    final r = await a2.wait((m) => m['t'] == Msg.room && m['room'] != null);
+    expect((r['room']['seats'] as List)[0]['client']['id'], id);
+    a2.send({'t': 'auto_play', 'on': false});
+    final r2 = await b.wait((m) => m['t'] == Msg.room && (m['room']['seats'] as List)[0]['auto'] == false);
+    expect(r2['room']['seats'][0]['client']['online'], isTrue);
+  });
+
+  test('duplicate login with an online name from the same ip is refused', () async {
+    await login('丙', uid: 'uid-c');
+    final d = TClient();
+    await d.connect(port);
+    d.send({'t': 'hello', 'ver': kProtocolVersion, 'name': '丙', 'avatar': 3, 'token': '', 'uid': 'uid-d'});
+    final e = await d.waitT(Msg.error);
+    expect(e['fatal'], isTrue);
+    expect(e['msg'], contains('修改名称'));
+    // a different name is fine, but renaming onto the online name is not
+    final f = await login('丁', uid: 'uid-d');
+    f.send({'t': 'set_profile', 'name': '丙', 'avatar': 3});
+    final e2 = await f.waitT(Msg.error);
+    expect(e2['msg'], contains('已在线'));
+  });
+
+  test('player whose seat went to the bot gets it back on return', () async {
+    final (a, b, rid) = await twoPlayers();
+    a.send({'t': 'leave_room'});
+    await b.wait((m) => m['t'] == Msg.room && (m['room']['seats'] as List)[0]['takenOver'] == true);
+    b.clear();
+    a.send({'t': 'join_room', 'room': rid});
+    final r = await b.wait((m) =>
+        m['t'] == Msg.room && (m['room']['seats'] as List)[0]['takenOver'] == false);
+    final seat = (r['room']['seats'] as List)[0];
+    expect(seat['bot'], isFalse);
+    expect(seat['client']['name'], '甲');
+    expect(server.rooms[rid]!.engine!.setup.bots[0], isFalse);
+  });
+
   test('resign ends the game; stats, tally and replay recorded', () async {
     final (a, b, _) = await twoPlayers();
     final r0 = await a.wait((m) => m['t'] == Msg.room && m['room']['playing'] == true);

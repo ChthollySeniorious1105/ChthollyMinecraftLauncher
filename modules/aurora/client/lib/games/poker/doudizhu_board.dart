@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:aurora_shared/games/poker/ddz_rules.dart';
 import 'package:flutter/material.dart';
 
@@ -186,7 +188,9 @@ class _DoudizhuBoardState extends State<DoudizhuBoard> {
         final wCard = (c.maxWidth / 13).clamp(34.0, 64.0).toDouble();
         final byH = (c.maxHeight / 7.5).clamp(34.0, 64.0).toDouble();
         final cw = wCard < byH ? wCard : byH;
-        final small = cw * 0.72;
+        // Played / revealed cards on the table get their own size: tying them to the
+        // hand width made them ~24px on phones (hand cards are clamped small there).
+        final small = max(cw * 0.72, min(c.maxWidth / 8, c.maxHeight / 12)).clamp(34.0, 56.0).toDouble();
         final panelMax = (c.maxWidth / others.length - 12).clamp(120.0, 420.0).toDouble();
         return Stack(children: [
           Column(children: [
@@ -200,13 +204,13 @@ class _DoudizhuBoardState extends State<DoudizhuBoard> {
                 Row(mainAxisSize: MainAxisSize.min, children: [
                   const Text('底牌 ', style: TextStyle(color: Colors.white70)),
                   for (final b in bottom)
-                    Padding(padding: const EdgeInsets.only(right: 2), child: _mini('$b', small * 0.7)),
+                    Padding(padding: const EdgeInsets.only(right: 2), child: _mini('$b', max(small * 0.6, 26))),
                 ])
               else
                 Row(mainAxisSize: MainAxisSize.min, children: [
                   const Text('底牌 ', style: TextStyle(color: Colors.white70)),
                   for (var i = 0; i < (v['bottomCount'] as int); i++)
-                    Padding(padding: const EdgeInsets.only(right: 2), child: _mini('back', small * 0.5)),
+                    Padding(padding: const EdgeInsets.only(right: 2), child: _mini('back', max(small * 0.45, 20))),
                 ]),
             ]),
             const SizedBox(height: 6),

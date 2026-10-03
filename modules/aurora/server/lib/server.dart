@@ -20,6 +20,11 @@ const emptyRoomTtl = Duration(minutes: 3);
 const idleTimeout = Duration(seconds: 60);
 const reconnectGrace = Duration(minutes: 10);
 
+/// A login with an online player's name + IP is refused as a duplicate unless
+/// that player has been silent this long (clients ping every 10 s, so the old
+/// socket is a dead connection the server hasn't noticed yet).
+const duplicateLoginStale = Duration(seconds: 25);
+
 /// Security limits.
 const handshakeTimeout = Duration(seconds: 10);
 const maxConnectionsPerIp = 16;
@@ -155,7 +160,16 @@ class Seat {
 
   /// Player left mid-game; a bot keeps playing for them until the game ends.
   bool takenOver = false;
+
+  /// Who left a [takenOver] seat, so they can take it back when they return.
+  String ownerName = '', ownerIp = '', ownerPid = '';
   bool get empty => client == null && !bot;
+
+  bool ownedBy(Client c) =>
+      takenOver &&
+      ownerIp.isNotEmpty &&
+      ownerIp == c.ip &&
+      (ownerName == c.name || (ownerPid.isNotEmpty && ownerPid == c.pid));
 }
 
 class Room implements GameHost {
@@ -448,8 +462,25 @@ class Room implements GameHost {
     c.room = this;
     emptySince = null;
     systemChat('${c.name} 进入了房间');
+    _reclaimSeat(c);
     pushRoom();
     pushGame(c);
+  }
+
+  /// A player whose seat was handed to the bot (left / timed out mid-game)
+  /// came back: give the seat back instead of making them watch.
+  void _reclaimSeat(Client c) {
+    final e = engine;
+    if (e == null || e.isOver || seatOf(c) >= 0) return;
+    final rs = seats.indexWhere((s) => s.ownedBy(c));
+    if (rs < 0) return;
+    final gs = gameSeats.indexOf(rs);
+    if (gs < 0) return;
+    seats[rs] = Seat()..client = c;
+    e.setup.bots[gs] = false;
+    _botTimers.remove(gs)?.cancel();
+    systemChat('${c.name} 回到了座位，托管已解除');
+    _updateClocks(e);
   }
 
   void leave(Client c, {bool silent = false}) {
@@ -474,6 +505,9 @@ class Room implements GameHost {
       seat.takenOver = true;
       seat.auto = false;
       seat.botName = '${c.name}(托管)';
+      seat.ownerName = c.name;
+      seat.ownerIp = c.ip;
+      seat.ownerPid = c.pid;
       engine!.setup.bots[gameSeats.indexOf(rs)] = true;
     } else {
       seats[rs] = Seat();
@@ -532,6 +566,9 @@ class Room implements GameHost {
   void onMemberOnline(Client c) {
     emptySince = null;
     systemChat('${c.name} 重新连接');
+    final e = engine;
+    // the bot stopped covering for this seat; restart the turn clock
+    if (e != null && !e.isOver) _updateClocks(e);
     pushRoom();
     pushGame(c);
   }
@@ -1754,6 +1791,16 @@ class AuroraServer {
     var token = asStr(m['token']);
     if (token.length > 128) token = '';
     var c = token.isNotEmpty ? _byToken[token] : null;
+    final ip = addr.contains(':') ? addr.substring(0, addr.lastIndexOf(':')) : addr;
+    if (c == null) {
+      // no (valid) token, e.g. page reloaded or launcher restarted: same name
+      // from the same IP is the same person, so they get their seat back
+      final same = _sameName(name, ip);
+      if (same != null && same.online && DateTime.now().difference(same.lastSeen) < duplicateLoginStale) {
+        throw '名称「$name」已在线（同一网络下有人正在使用），请修改名称后再连接';
+      }
+      c = same;
+    }
     final reconnect = c != null;
     if (c != null && c.online) {
       // same identity connecting again: kick the old socket
@@ -1791,6 +1838,12 @@ class AuroraServer {
       c.send(_roomList());
     }
     return c;
+  }
+
+  /// The identity using [name] from [ip], if any.
+  Client? _sameName(String name, String ip, {Client? except}) {
+    if (ip.isEmpty) return null;
+    return _byToken.values.where((x) => x != except && x.name == name && x.ip == ip).firstOrNull;
   }
 
   Map<String, dynamic> _welcome(Client c) {
@@ -1880,6 +1933,8 @@ class AuroraServer {
           final name = asStr(m['name']).trim();
           final err = validateName(name);
           if (err != null) throw GameError(err);
+          final other = _sameName(name, c.ip, except: c);
+          if (other != null && other.online) throw GameError('名称「$name」已在线（同一网络下有人正在使用），请换一个');
           c.name = name;
           c.avatar = asInt(m['avatar'], c.avatar).clamp(1, kAvatarCount);
           c.send(_welcome(c));
