@@ -1,13 +1,13 @@
 # Aurora 联机小游戏
 
-客户端与服务端分离的原生联机游戏程序（非网页），全部通信走 **单条 TCP 长连接**（游戏数据、文字聊天、语音都在同一连接内），适合配合内网穿透（frp / Sakura / Tailscale 等）的 TCP 隧道使用。
+客户端与服务端分离的联机游戏程序，全部通信走 **单条长连接**（游戏数据、文字聊天、语音都在同一连接内）：原生客户端用 TCP，**网页版**在浏览器里通过 WebSocket 连接同一个服务器，两种客户端可以在同一房间一起玩。适合配合内网穿透（frp / Sakura / Tailscale 等）的 TCP 隧道使用。
 
 ## 目录
 
 | 目录 | 说明 |
 |---|---|
 | `server/` | 服务端（Dart 控制台程序，编译为 `aurora_server.exe`） |
-| `client/` | 客户端（Flutter：Windows / Android / macOS / iOS） |
+| `client/` | 客户端（Flutter：Windows / Android / macOS / iOS / 网页） |
 | `shared/` | 共享协议与全部游戏规则引擎（服务端权威运行，杜绝作弊） |
 | `assets/` | 原始 500 个玩家形象（已复制到 `client/assets/avatars`） |
 | `GAME_DEV_GUIDE.md` | 新增游戏的开发规范 |
@@ -18,9 +18,15 @@
 aurora_server.exe                 # 首次运行交互式输入端口和服务器名称，保存到 aurora_server.json
 aurora_server.exe --port 9000     # 指定端口
 aurora_server.exe --port 9000 --name "周末麻将局"
+aurora_server.exe --web-port 8080     # 网页版端口（默认 7790，0 = 关闭网页版）
 ```
 
 - 端口自选，默认 7788；启动后会列出本机所有 IP。
+- **网页版**：服务器同时在网页版端口（默认 7790，`aurora_server.json` 的 `webPort` 或 `--web-port`）提供 HTTP 服务，玩家用浏览器打开 `http://服务器地址:7790` 即可直接游玩，无需安装客户端。
+  - 网页客户端文件放在 exe 同目录的 `web` 文件夹（发布包已包含；自行构建见下方「构建」）。没有 `web` 文件夹时浏览器只会看到提示页。
+  - 同一端口的 `/ws` 是 WebSocket 游戏连接，协议与原生客户端完全相同（X25519 + ChaCha20-Poly1305 端到端加密、同样的防滥用限制），网页和原生玩家可在同一房间。
+  - 内网穿透时把 TCP 7790 也映射出去。放在 nginx / Caddy 后面用 HTTPS 时，需反代 WebSocket（`/ws` 的 Upgrade 头），并在 `.env` 设 `TRUST_PROXY=true` 以按真实 IP 限流/封禁；HTTPS 页面只能连接 `wss://` 地址。
+  - 网页版的限制：没有局域网搜索（浏览器不能发 UDP）；本机回放保存在浏览器存储里（最多 20 局）；语音需要浏览器授权麦克风，且只有 HTTPS 或 localhost 页面才能使用麦克风。
 - 也可以双击 `启动服务器.bat`。
 - 房主可设置每步思考时间（15 秒～5 分钟或不限），超时由电脑代打一步。
 - 聊天与语音有简单的防刷屏限速。
@@ -30,7 +36,7 @@ aurora_server.exe --port 9000 --name "周末麻将局"
 - 所有游戏支持 **观战**：进入房间时可选"以观战者身份进入"，或在房间里点"观战"离开座位；观战者看不到任何玩家的私密信息。
 - 只有当入座人数满足该游戏的人数要求时，房主才能开始游戏。
 - 断线 10 分钟内重连可回到原房间原座位；对局中离开/掉线由电脑托管。
-- 内网穿透：把本机 `TCP <端口>` 映射出去即可，客户端填写穿透后的 `地址:端口`。
+- 内网穿透：把本机 `TCP <端口>` 映射出去即可，客户端填写穿透后的 `地址:端口`（网页版另映射网页版端口）。
 - **自定义词库**：首次启动会在 exe 同目录生成 `words` 文件夹（UTF-8 文本，保存后对新开的对局生效，控制台 `words` 命令查看条数）：
   - `words/drawguess.txt`：你画我猜，每行 `词语` 或 `词语|类别`
   - `words/undercover.txt`：谁是卧底，每行 `平民词|卧底词`
@@ -91,12 +97,21 @@ cd client && flutter build ios --release --no-codesign   # 生成未签名 Runne
 cd server && dart compile exe bin/aurora_server.dart     # macOS 版服务端
 ```
 
+网页版（任意系统）：
+
+```bash
+cd client && flutter build web --release --no-web-resources-cdn
+# 把 client/build/web 复制为 aurora_server 同目录的 web 文件夹
+```
+
+`--no-web-resources-cdn` 让 CanvasKit 从本服务器加载而不是 gstatic.com（很多网络访问不了）；中文/emoji 字体按需从 `fonts.gstatic.cn` 加载（`web/flutter_bootstrap.js` 可改）。`build-servers.ps1` 打包 Aurora 服务端时会自动构建并附带 `web`。
+
 或推送到 GitHub 后运行 `.github/workflows/build.yml`（macOS runner 自动产出 macOS zip、未签名 ipa、各平台服务端）。
 
 ## 测试
 
 ```
-cd server && dart test                       # 服务端：房间/聊天/语音转发/重连/空房销毁/超时代打
+cd server && dart test                       # 服务端：房间/聊天/语音转发/重连/空房销毁/超时代打/网页版（静态文件 + WebSocket）
 cd client && flutter test                    # 客户端：所有牌桌在手机竖屏/横屏/桌面尺寸渲染、降噪、真实客户端↔服务器端到端对局
 SHOTS=1 flutter test test/screenshot_test.dart   # 把每个游戏和界面截图到 client/build/shots/ 便于人工检查
 cd shared && dart test                       # 各游戏规则单测 + 电脑对打模拟

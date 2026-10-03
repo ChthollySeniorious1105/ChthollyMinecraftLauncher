@@ -28,7 +28,7 @@ void main() {
     app.prefs = await SharedPreferences.getInstance();
     app.games = [for (final g in gameRegistry) g.toJson()];
     tmp = Directory.systemTemp.createTempSync('aurora_replays_');
-    ReplayStore.dirOverride = tmp;
+    ReplayStore.dirOverride = tmp.path;
   });
   tearDownAll(() {
     try {
@@ -76,7 +76,7 @@ void main() {
     expect(s.replayPath, isNotNull);
     final saved = await ReplayStore.list();
     expect(saved, isNotEmpty);
-    final r = await ReplayStore.load(saved.first.file);
+    final r = await ReplayStore.load(saved.first.path);
     expect(r.meta.game, 'tictactoe');
     expect(r.frames(0), isNotEmpty);
     expect(r.frames(-1), isNotEmpty);

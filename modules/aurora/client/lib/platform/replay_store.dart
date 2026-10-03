@@ -1,110 +1,75 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:aurora_shared/aurora_shared.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'replay_backend_io.dart' if (dart.library.js_interop) 'replay_backend_web.dart' as backend;
 
 /// Decode a gzip-compressed replay document.
 Replay decodeReplayGz(List<int> gz) {
-  final j = jsonDecode(utf8.decode(gzip.decode(gz)));
+  final j = jsonDecode(utf8.decode(const GZipDecoder().decodeBytes(gz)));
   return Replay.fromJson((j as Map).cast<String, dynamic>());
 }
 
-Uint8List encodeReplayGz(Map<String, dynamic> doc) => Uint8List.fromList(gzip.encode(utf8.encode(jsonEncode(doc))));
+Uint8List encodeReplayGz(Map<String, dynamic> doc) => const GZipEncoder().encodeBytes(utf8.encode(jsonEncode(doc)));
 
-/// A replay file saved on this device.
+/// A replay saved on this device. [path] is a file path natively and a
+/// storage key in the browser; show it to users only when [ReplayStore.hasFiles].
 class LocalReplay {
-  final File file;
+  final String path;
   final ReplayMeta meta;
-  LocalReplay(this.file, this.meta);
+  LocalReplay(this.path, this.meta);
 }
 
-/// Replays saved in the app documents dir (`aurora_replays/*.aurora-replay.gz`,
-/// with a small `*.meta.json` sidecar so listing doesn't decode every file).
+/// Replays saved on this device: natively in the app documents dir
+/// (`aurora_replays/*.aurora-replay.gz` + `*.meta.json` sidecars), in the
+/// browser in localStorage (fewer kept, it is only a few MB).
 class ReplayStore {
-  /// Tests set this to a temp dir (path_provider has no plugin under test).
-  static Directory? dirOverride;
+  /// Tests set this to a temp dir path (path_provider has no plugin under test).
+  static String? dirOverride;
   static const ext = '.aurora-replay.gz';
-  static const keep = 200;
+  static int get keep => backend.keep;
 
-  static Future<Directory> dir() async {
-    final base = dirOverride ?? Directory('${(await getApplicationDocumentsDirectory()).path}${Platform.pathSeparator}aurora_replays');
-    if (!base.existsSync()) base.createSync(recursive: true);
-    return base;
-  }
-
-  static File _side(FileSystemEntity f) => File('${f.path.substring(0, f.path.length - ext.length)}.meta.json');
+  /// False in the browser: there is no file path worth showing.
+  static bool get hasFiles => backend.hasFiles;
 
   static String _safe(String id) => id.replaceAll(RegExp(r'[^A-Za-z0-9_\-]'), '_');
 
-  /// Save gzip bytes of a replay; returns the file.
-  static Future<File> saveGz(ReplayMeta meta, List<int> gz) async {
-    final d = await dir();
-    final id = _safe(meta.id);
-    final f = File('${d.path}${Platform.pathSeparator}$id$ext');
-    await f.writeAsBytes(gz, flush: true);
-    await File('${d.path}${Platform.pathSeparator}$id.meta.json').writeAsString(jsonEncode(meta.toJson(withUids: true)));
-    await _prune(d);
-    return f;
-  }
+  /// Save gzip bytes of a replay; returns its path / key.
+  static Future<String> saveGz(ReplayMeta meta, List<int> gz) =>
+      backend.save(dirOverride, _safe(meta.id), jsonEncode(meta.toJson(withUids: true)), gz);
 
-  static Future<File> saveDoc(Map<String, dynamic> doc) async {
+  static Future<String> saveDoc(Map<String, dynamic> doc) {
     final meta = ReplayMeta.fromJson((doc['meta'] as Map).cast<String, dynamic>());
     return saveGz(meta, encodeReplayGz(doc));
   }
 
-  static Future<bool> exists(String id) async {
-    final d = await dir();
-    return File('${d.path}${Platform.pathSeparator}${_safe(id)}$ext').existsSync();
-  }
+  static Future<bool> exists(String id) => backend.exists(dirOverride, _safe(id));
 
   static Future<List<LocalReplay>> list() async {
     final out = <LocalReplay>[];
     try {
-      final d = await dir();
-      for (final e in d.listSync()) {
-        if (e is! File || !e.path.endsWith(ext)) continue;
-        final side = _side(e);
-        ReplayMeta? meta;
+      for (final (path, metaJson) in await backend.list(dirOverride)) {
+        ReplayMeta meta;
         try {
-          if (side.existsSync()) {
-            meta = ReplayMeta.fromJson((jsonDecode(side.readAsStringSync()) as Map).cast<String, dynamic>());
-          } else {
-            meta = decodeReplayGz(e.readAsBytesSync()).meta;
-          }
+          meta = metaJson != null
+              ? ReplayMeta.fromJson((jsonDecode(metaJson) as Map).cast<String, dynamic>())
+              : decodeReplayGz(await backend.read(path)).meta;
         } catch (_) {
           continue;
         }
-        out.add(LocalReplay(e, meta));
+        out.add(LocalReplay(path, meta));
       }
     } catch (_) {}
     out.sort((a, b) => b.meta.startedAt.compareTo(a.meta.startedAt));
     return out;
   }
 
-  static Future<Replay> load(File f) async => decodeReplayGz(await f.readAsBytes());
+  static Future<Replay> load(String path) async => decodeReplayGz(await backend.read(path));
 
-  static Future<void> delete(LocalReplay r) async {
-    try {
-      r.file.deleteSync();
-      final side = _side(r.file);
-      if (side.existsSync()) side.deleteSync();
-    } catch (_) {}
-  }
-
-  static Future<void> _prune(Directory d) async {
-    try {
-      final files = d.listSync().whereType<File>().where((f) => f.path.endsWith(ext)).toList()
-        ..sort((a, b) => b.statSync().modified.compareTo(a.statSync().modified));
-      for (final f in files.skip(keep)) {
-        f.deleteSync();
-        final side = _side(f);
-        if (side.existsSync()) side.deleteSync();
-      }
-    } catch (_) {}
-  }
+  static Future<void> delete(LocalReplay r) => backend.delete(r.path);
 }
 
 /// Short unique id: base36 timestamp + 4 random chars.

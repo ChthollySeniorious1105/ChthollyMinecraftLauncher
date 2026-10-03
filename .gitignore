@@ -41,3 +41,4 @@ tools/bedrocktool/.toolchain/
 
 # Pulse AI weights (packaged as add-ons by build.ps1)
 rvc/
+.flutter-plugins-dependencies

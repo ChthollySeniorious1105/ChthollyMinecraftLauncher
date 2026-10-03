@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:aurora_shared/aurora_shared.dart';
@@ -16,7 +15,7 @@ import '../widgets/common.dart';
 /// Opens a replay file saved on this device.
 Future<void> openLocalReplayFile(BuildContext context, String path) async {
   try {
-    final r = await ReplayStore.load(File(path));
+    final r = await ReplayStore.load(path);
     if (!context.mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReplayPlayerScreen(replay: r, savedPath: path)));
   } catch (e) {
@@ -109,7 +108,7 @@ class _ReplaysScreenState extends State<ReplaysScreen> with SingleTickerProvider
       if (l.isEmpty) return const Center(child: Text('本机还没有保存的回放\n（单机对局结束后自动保存；联机回放可在播放时保存）', textAlign: TextAlign.center));
       return ListView.builder(
         itemCount: l.length,
-        itemBuilder: (c, i) => _tile(l[i].meta, () => openLocalReplayFile(context, l[i].file.path), onDelete: () async {
+        itemBuilder: (c, i) => _tile(l[i].meta, () => openLocalReplayFile(context, l[i].path), onDelete: () async {
           await ReplayStore.delete(l[i]);
           _loadLocal();
         }),
@@ -242,9 +241,9 @@ class _ReplayPlayerScreenState extends State<ReplayPlayerScreen> {
     final gz = widget.gz;
     if (gz == null) return;
     try {
-      final f = await ReplayStore.saveGz(r.meta, gz);
-      setState(() => _saved = f.path);
-      if (mounted) AppScope.read(context).toast('已保存到本机：${f.path}');
+      final path = await ReplayStore.saveGz(r.meta, gz);
+      setState(() => _saved = path);
+      if (mounted) AppScope.read(context).toast(ReplayStore.hasFiles ? '已保存到本机：$path' : '已保存到本机（浏览器存储）');
     } catch (e) {
       if (mounted) AppScope.read(context).toast('保存失败：$e');
     }
@@ -361,7 +360,7 @@ class _ReplayPlayerScreenState extends State<ReplayPlayerScreen> {
           ConstrainedBox(constraints: const BoxConstraints(maxWidth: 150), child: seatPicker),
           if (widget.gz != null && _saved == null)
             IconButton(tooltip: '保存到本机', onPressed: _save, icon: const Icon(Icons.download)),
-          if (_saved != null)
+          if (_saved != null && ReplayStore.hasFiles)
             IconButton(
               tooltip: '复制文件路径',
               onPressed: () => copyText(context, _saved!),

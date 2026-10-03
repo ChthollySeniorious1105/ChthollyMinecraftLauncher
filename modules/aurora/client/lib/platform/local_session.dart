@@ -342,8 +342,7 @@ class LocalSession extends ChangeNotifier implements GameHost {
             ranking: engine.placings,
             room: '单机',
           ));
-      final f = await ReplayStore.saveDoc(doc);
-      replayPath = f.path;
+      replayPath = await ReplayStore.saveDoc(doc);
     } catch (e) {
       debugPrint('save local replay failed: $e');
     }

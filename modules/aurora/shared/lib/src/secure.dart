@@ -37,8 +37,21 @@ class SecureChannel {
 
   static List<int> _nonce(int ctr) {
     final n = Uint8List(12);
-    ByteData.sublistView(n).setUint64(4, ctr);
+    _putU64(n, 4, ctr);
     return n;
+  }
+
+  // ByteData.setUint64/getUint64 are unsupported when compiled to JavaScript
+  // (web client); counters stay far below 2^53 so two 32-bit halves suffice.
+  static void _putU64(Uint8List b, int off, int v) {
+    final bd = ByteData.sublistView(b);
+    bd.setUint32(off, v ~/ 0x100000000);
+    bd.setUint32(off + 4, v % 0x100000000);
+  }
+
+  static int _getU64(Uint8List b, int off) {
+    final bd = ByteData.sublistView(b);
+    return bd.getUint32(off) * 0x100000000 + bd.getUint32(off + 4);
   }
 
   /// Seal one frame (kind byte is authenticated as associated data).
@@ -46,7 +59,7 @@ class SecureChannel {
     final ctr = _sendCtr++;
     final box = _aead.encryptSync(plain, secretKey: _sendKey, nonce: _nonce(ctr), aad: [kind]);
     final out = Uint8List(8 + box.cipherText.length + 16);
-    ByteData.sublistView(out).setUint64(0, ctr);
+    _putU64(out, 0, ctr);
     out.setRange(8, 8 + box.cipherText.length, box.cipherText);
     out.setRange(8 + box.cipherText.length, out.length, box.mac.bytes);
     return out;
@@ -55,7 +68,7 @@ class SecureChannel {
   /// Open one frame. Throws on tamper, replay or reordering.
   Uint8List open(int kind, Uint8List sealed) {
     if (sealed.length < 24) throw const FormatException('short frame');
-    final ctr = ByteData.sublistView(sealed, 0, 8).getUint64(0);
+    final ctr = _getU64(sealed, 0);
     if (ctr != _recvCtr) throw const FormatException('replayed or reordered frame');
     final ct = Uint8List.sublistView(sealed, 8, sealed.length - 16);
     final mac = Mac(Uint8List.sublistView(sealed, sealed.length - 16));

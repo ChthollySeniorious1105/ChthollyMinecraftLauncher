@@ -6,6 +6,7 @@
 # The only place servers are built — build.ps1 does not output CMLS (run it with -WithServers to call this).
 # Output (dist\servers\):
 #   CMLS-<ver>-windows-x64.zip  / Aurora-server-<ver>-windows-x64.zip / Pulse-server-<ver>-windows-x64.zip   exe + start script
+#   (Aurora also ships its browser client in web\ — served on the web port, default 7790)
 #   CML-servers-src-<ver>.zip   source of all three servers (+ shared libs, core) — buildable with `dart compile exe`
 #
 #   powershell -ExecutionPolicy Bypass -File build-servers.ps1 [-Version 0.2.1] [-SkipTests] [-SourceOnly]
@@ -39,6 +40,15 @@ if (-not $SourceOnly) {
     if ($LASTEXITCODE -ne 0) { throw "$($s.Name) build failed" }
     if ($s.Bat) { Copy-Item $s.Bat $stage }
     Pop-Location
+    if ($s.Name -eq "Aurora-server") {
+      # browser client: static files served by aurora_server on its web port.
+      # --no-web-resources-cdn keeps CanvasKit local (gstatic is unreachable on many networks)
+      Push-Location (Join-Path $root "modules\aurora\client")
+      flutter build web --release --no-web-resources-cdn --no-wasm-dry-run
+      if ($LASTEXITCODE -ne 0) { throw "Aurora web client build failed" }
+      Copy-Item "build\web" (Join-Path $stage "web") -Recurse
+      Pop-Location
+    }
     Compress-Archive "$stage\*" (Join-Path $out "$($s.Name)-$Version-windows-x64.zip")
   }
 }

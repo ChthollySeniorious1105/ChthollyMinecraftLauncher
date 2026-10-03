@@ -411,6 +411,7 @@ class AppState extends ChangeNotifier {
   }
 
   String _friendly(Object e) {
+    if (e is ConnectException) return e.message;
     final s = e.toString();
     if (s.contains('timed out') || s.contains('超时')) return '连接超时';
     if (s.contains('refused') || s.contains('拒绝')) return '连接被拒绝（服务器未启动或端口错误）';

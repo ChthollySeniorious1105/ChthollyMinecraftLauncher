@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Aurora 联机小游戏（网页版）">
+  <meta name="theme-color" content="#1b1f3b">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Aurora">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Aurora 联机小游戏</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin: 0; height: 100%; background: #1b1f3b; }
+    #aurora-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #cfd6ff; font: 16px/1.6 "Microsoft YaHei", "PingFang SC", sans-serif; letter-spacing: 2px; }
+  </style>
+  <!-- sound effects + voice playback (flutter_soloud WASM) -->
+  <script src="assets/packages/flutter_soloud/web/init_soloud.js" defer></script>
+</head>
+<body>
+  <div id="aurora-loading">AURORA 加载中…</div>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

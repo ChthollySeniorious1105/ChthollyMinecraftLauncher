@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_soloud/flutter_soloud.dart';
+
+import 'env_io.dart' if (dart.library.js_interop) 'env_web.dart';
 
 /// One shared SoLoud initialisation for voice playback and sound effects.
 /// Returns false (never throws) when audio output is unavailable.
@@ -23,7 +24,7 @@ Future<bool> ensureSoLoud() {
 }
 
 /// True under `flutter test`: never touch the audio plugin there.
-final bool kUnderTest = Platform.environment.containsKey('FLUTTER_TEST');
+final bool kUnderTest = isFlutterTest();
 
 enum SfxKind { turn, start, win, lose, over, emote, tick }
 

@@ -31,15 +31,48 @@ const maxClients = 2000; // identities kept (online + reconnect grace)
 const maxRooms = 500;
 const maxRoomsPerClient = 3;
 
+/// Default HTTP port for the browser client (static files + `/ws` WebSocket).
+const kDefaultWebPort = 7790;
+
 void logLine(String s) {
   final t = DateTime.now().toIso8601String().substring(11, 19);
   stdout.writeln('[$t] $s');
 }
 
+/// One player connection: a raw TCP socket (native clients) or a browser
+/// WebSocket. Both carry the same length-prefixed, encrypted frames.
+abstract class Wire {
+  void add(List<int> bytes);
+  void destroy();
+}
+
+class _SocketWire implements Wire {
+  final Socket s;
+  _SocketWire(this.s);
+  @override
+  void add(List<int> bytes) => s.add(bytes);
+  @override
+  void destroy() => s.destroy();
+}
+
+class _WebSocketWire implements Wire {
+  final WebSocket ws;
+  _WebSocketWire(this.ws);
+  @override
+  void add(List<int> bytes) {
+    if (ws.readyState == WebSocket.open) ws.add(bytes); // List<int> = binary message
+  }
+
+  @override
+  void destroy() {
+    ws.close(WebSocketStatus.policyViolation).catchError((_) {});
+  }
+}
+
 class Client {
   final int id;
   final String token;
-  Socket? socket;
+  Wire? socket;
 
   /// Encrypted channel for the current socket (null until handshake is done).
   SecureChannel? channel;
@@ -1213,6 +1246,7 @@ class AuroraServer {
   final int port;
   final String serverName;
   ServerSocket? _socket;
+  HttpServer? _http;
   final Map<String, Client> _byToken = {};
   final Map<String, Room> rooms = {};
   int _nextId = 1;
@@ -1246,6 +1280,15 @@ class AuroraServer {
   /// IPs banned by the console `ban` command until restart.
   final Set<String> bannedIps = {};
 
+  /// HTTP port for the browser client (null = disabled, 0 = ephemeral for tests).
+  final int? webPort;
+
+  /// Built web client (`flutter build web` output) served over [webPort].
+  final Directory? webDir;
+
+  /// Take the client IP from X-Forwarded-For (only behind a trusted reverse proxy).
+  final bool trustProxy;
+
   AuroraServer(this.port,
       {this.serverName = 'Aurora 服务器',
       this.emptyTtl = emptyRoomTtl,
@@ -1258,7 +1301,10 @@ class AuroraServer {
       Directory? replayDir,
       int replayKeep = 2000,
       this.extraGames = const [],
-      this.discoveryPort})
+      this.discoveryPort,
+      this.webPort,
+      this.webDir,
+      this.trustProxy = false})
       : resources = ServerResources(resourceDir ?? Directory('words')),
         identity = identity ?? ServerIdentity.fromSeed(ServerIdentity.newSeed()),
         salt = salt ?? _randomHex(16),
@@ -1295,6 +1341,134 @@ class AuroraServer {
     _sweeper = Timer.periodic(sweepInterval, (_) => _sweep());
     logLine('Aurora 服务器已启动，监听端口 $port');
     if (discoveryPort != null) await _startDiscovery(discoveryPort!);
+    if (webPort != null) await _startWeb(webPort!);
+  }
+
+  /// Actual bound HTTP port of the web client (tests bind 0); null when off.
+  int? get webBoundPort => _http?.port;
+
+  /// True when [webDir] holds a built web client.
+  bool get hasWebClient {
+    final d = webDir;
+    return d != null && File('${d.path}${Platform.pathSeparator}index.html').existsSync();
+  }
+
+  Future<void> _startWeb(int httpPort) async {
+    try {
+      final h = await HttpServer.bind(InternetAddress.anyIPv4, httpPort);
+      h.autoCompress = true; // main.dart.js / canvaskit compress well
+      h.idleTimeout = const Duration(seconds: 30);
+      _http = h;
+      h.listen((req) => _onHttp(req).catchError((_) {
+            try {
+              req.response.statusCode = HttpStatus.internalServerError;
+              req.response.close();
+            } catch (_) {}
+          }));
+      logLine('网页版已开启（HTTP ${h.port}）${hasWebClient ? '' : '，但未找到网页客户端文件（web 目录），浏览器只能看到提示页'}');
+    } catch (e) {
+      logLine('网页版未开启（HTTP $httpPort 无法监听：$e）');
+    }
+  }
+
+  String _httpIp(HttpRequest req) {
+    if (trustProxy) {
+      final f = req.headers.value('x-forwarded-for');
+      if (f != null && f.trim().isNotEmpty) return f.split(',').first.trim();
+      final r = req.headers.value('x-real-ip');
+      if (r != null && r.trim().isNotEmpty) return r.trim();
+    }
+    return req.connectionInfo?.remoteAddress.address ?? '';
+  }
+
+  Future<void> _onHttp(HttpRequest req) async {
+    final res = req.response;
+    if (req.uri.path == '/ws') {
+      final ip = _httpIp(req);
+      if (!WebSocketTransformer.isUpgradeRequest(req) || bannedIps.contains(ip)) {
+        res.statusCode = HttpStatus.badRequest;
+        await res.close();
+        return;
+      }
+      final ws = await WebSocketTransformer.upgrade(req,
+          compression: CompressionOptions.compressionOff, // payloads are encrypted: incompressible
+          maxPayloadLength: kMaxFrame + 64);
+      ws.pingInterval = const Duration(seconds: 20);
+      _accept(_WebSocketWire(ws), ws.where((m) => m is List<int>).cast<List<int>>(), ip,
+          req.connectionInfo?.remotePort ?? 0);
+      return;
+    }
+    await _serveStatic(req);
+  }
+
+  static const _mime = {
+    'html': 'text/html; charset=utf-8',
+    'js': 'text/javascript; charset=utf-8',
+    'mjs': 'text/javascript; charset=utf-8',
+    'json': 'application/json; charset=utf-8',
+    'css': 'text/css; charset=utf-8',
+    'wasm': 'application/wasm',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'svg': 'image/svg+xml',
+    'ico': 'image/x-icon',
+    'otf': 'font/otf',
+    'ttf': 'font/ttf',
+    'woff2': 'font/woff2',
+    'txt': 'text/plain; charset=utf-8',
+    'md': 'text/plain; charset=utf-8',
+  };
+
+  static const _noCache = {'index.html', 'flutter_bootstrap.js', 'flutter_service_worker.js', 'version.json', 'manifest.json'};
+
+  Future<void> _serveStatic(HttpRequest req) async {
+    final res = req.response;
+    res.headers
+      ..set('X-Content-Type-Options', 'nosniff')
+      ..set('Referrer-Policy', 'no-referrer');
+    if (req.method != 'GET' && req.method != 'HEAD') {
+      res.statusCode = HttpStatus.methodNotAllowed;
+      await res.close();
+      return;
+    }
+    final sep = Platform.pathSeparator;
+    final root = webDir;
+    if (root == null || !hasWebClient) {
+      res.headers.contentType = ContentType.html;
+      res.write('<!doctype html><meta charset="utf-8"><title>Aurora</title>'
+          '<p style="font:16px sans-serif;margin:40px">Aurora 服务器正在运行，但没有部署网页客户端。<br>'
+          '请把网页客户端（flutter build web 生成的 build/web）放到服务器 exe 同目录的 <code>web</code> 文件夹。</p>');
+      await res.close();
+      return;
+    }
+    // plain path segments only: no "..", separators, drive letters or NULs
+    final segs = req.uri.pathSegments.where((p) => p.isNotEmpty).toList();
+    if (segs.any((p) => p == '..' || p == '.' || p.contains(RegExp(r'[\\/:\x00]')))) {
+      res.statusCode = HttpStatus.notFound;
+      await res.close();
+      return;
+    }
+    var f = File([root.path, ...segs].join(sep));
+    if (segs.isEmpty || FileSystemEntity.isDirectorySync(f.path)) f = File('${f.path}${sep}index.html');
+    if (!f.existsSync()) {
+      if (segs.isNotEmpty && segs.last.contains('.')) {
+        res.statusCode = HttpStatus.notFound;
+        await res.close();
+        return;
+      }
+      f = File('${root.path}${sep}index.html'); // unknown route: let the app handle it
+    }
+    final name = f.path.substring(f.path.lastIndexOf(sep) + 1);
+    final ext = name.contains('.') ? name.substring(name.lastIndexOf('.') + 1).toLowerCase() : '';
+    res.headers
+      ..set(HttpHeaders.contentTypeHeader, _mime[ext] ?? 'application/octet-stream')
+      ..set(HttpHeaders.cacheControlHeader, _noCache.contains(name) ? 'no-cache' : 'public, max-age=3600');
+    if (req.method == 'HEAD') {
+      res.contentLength = f.lengthSync();
+    } else {
+      await res.addStream(f.openRead());
+    }
+    await res.close();
   }
 
   /// Actual bound UDP discovery port (tests bind 0).
@@ -1343,6 +1517,7 @@ class AuroraServer {
     for (final c in _byToken.values) {
       c.socket?.destroy();
     }
+    await _http?.close(force: true);
     await _socket?.close();
   }
 
@@ -1428,8 +1603,16 @@ class AuroraServer {
       };
 
   void _onSocket(Socket s) {
-    final ip = s.remoteAddress.address;
-    final addr = '$ip:${s.remotePort}';
+    s.setOption(SocketOption.tcpNoDelay, true);
+    // writes to a peer that vanished surface as errors on `done`; the listen
+    // callbacks in [_accept] already handle the disconnect.
+    s.done.catchError((_) {});
+    _accept(_SocketWire(s), s, s.remoteAddress.address, s.remotePort);
+  }
+
+  /// Runs the encrypted protocol on a new connection ([data] = raw frame bytes).
+  void _accept(Wire s, Stream<List<int>> data, String ip, int remotePort) {
+    final addr = '$ip:$remotePort';
     if (bannedIps.contains(ip)) {
       s.destroy();
       return;
@@ -1465,10 +1648,6 @@ class AuroraServer {
       }
     }
 
-    s.setOption(SocketOption.tcpNoDelay, true);
-    // writes to a peer that vanished surface as errors on `done`; the listen
-    // callbacks below already handle the disconnect.
-    s.done.catchError((_) {});
     Client? client;
     SecureChannel? channel;
     final decoder = FrameDecoder();
@@ -1487,11 +1666,11 @@ class AuroraServer {
       s.add(encodeFrame(kFrameJson, channel!.seal(kFrameJson, Uint8List.sublistView(frame, 5))));
     }
 
-    s.listen(
-      (data) {
+    data.listen(
+      (bytes) {
         List<Frame> frames;
         try {
-          frames = decoder.add(data);
+          frames = decoder.add(bytes);
         } catch (_) {
           kill();
           return;
@@ -1564,7 +1743,7 @@ class AuroraServer {
     );
   }
 
-  Client _hello(Socket s, SecureChannel ch, Map<String, dynamic> m, String addr) {
+  Client _hello(Wire s, SecureChannel ch, Map<String, dynamic> m, String addr) {
     if (m['t'] != Msg.hello) throw '协议错误';
     if (asInt(m['ver'], 0) != kProtocolVersion) {
       throw '客户端版本与服务器不匹配，请更新';
@@ -1631,7 +1810,7 @@ class AuroraServer {
     };
   }
 
-  void _onClosed(Client? c, Socket? s) {
+  void _onClosed(Client? c, Wire? s) {
     if (c == null || c.socket != s || s == null) return;
     c.socket = null;
     c.channel = null;

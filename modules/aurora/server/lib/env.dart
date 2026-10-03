@@ -15,6 +15,7 @@ const envKeys = [
   'AI_TIMEOUT',
   'AI_DAILY_LIMIT',
   'REPLAY_KEEP',
+  'TRUST_PROXY',
 ];
 
 const envTemplate = '''# Aurora 服务器配置（.env）
@@ -49,6 +50,11 @@ AI_DAILY_LIMIT=3000
 # ---- 回放 ----
 # 最多保留多少局回放（超出删除最旧的）
 REPLAY_KEEP=2000
+
+# ---- 网页版 ----
+# 网页版端口在 aurora_server.json 的 webPort 或启动参数 --web-port 设置（0 = 关闭）。
+# 只有把网页版放在 nginx / Caddy 等反向代理后面时才设为 true（从 X-Forwarded-For 读取玩家 IP）
+TRUST_PROXY=false
 ''';
 
 /// Parse `KEY=VALUE` lines: `#` comments (whole-line, or after whitespace for

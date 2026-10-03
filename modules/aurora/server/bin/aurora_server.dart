@@ -8,11 +8,14 @@ import 'package:aurora_server/server.dart';
 
 /// Aurora server entry point.
 ///
-/// Usage: aurora_server [--port 7788] [--name "我的服务器"]
+/// Usage: aurora_server [--port 7788] [--web-port 7790] [--name "我的服务器"]
 /// If --port is not given, the port is read from aurora_server.json next to
-/// the executable, or asked interactively on first run.
+/// the executable, or asked interactively on first run. The web client (HTTP +
+/// WebSocket) listens on --web-port / `webPort` (default 7790, 0 = off) and
+/// serves the `web` folder next to the executable.
 Future<void> main(List<String> args) async {
   int? port;
+  int? webPort;
   String? name;
   for (var i = 0; i < args.length; i++) {
     final a = args[i];
@@ -20,10 +23,14 @@ Future<void> main(List<String> args) async {
       port = int.tryParse(args[++i]);
     } else if (a.startsWith('--port=')) {
       port = int.tryParse(a.substring(7));
+    } else if (a == '--web-port' && i + 1 < args.length) {
+      webPort = int.tryParse(args[++i]);
+    } else if (a.startsWith('--web-port=')) {
+      webPort = int.tryParse(a.substring(11));
     } else if (a == '--name' && i + 1 < args.length) {
       name = args[++i];
     } else if (a == '--help' || a == '-h') {
-      stdout.writeln('用法: aurora_server [--port 端口] [--name 服务器名称]');
+      stdout.writeln('用法: aurora_server [--port 端口] [--web-port 网页版端口(0=关闭)] [--name 服务器名称]');
       return;
     }
   }
@@ -54,6 +61,11 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
   name ??= 'Aurora 服务器';
+  webPort ??= cfg['webPort'] is int ? cfg['webPort'] as int : kDefaultWebPort;
+  if (webPort < 0 || webPort > 65535 || (webPort == port && webPort != 0)) {
+    stderr.writeln('网页版端口无效：$webPort（不能与游戏端口相同，0 表示关闭）');
+    exit(1);
+  }
   // pid salt: generated once; changing it resets everyone's 战绩 identity
   final oldSalt = cfg['salt'];
   final salt = oldSalt is String && oldSalt.length >= 16 ? oldSalt : _randomHex(16);
@@ -61,6 +73,7 @@ Future<void> main(List<String> args) async {
     // keep any extra keys the admin added; only update the ones we own
     cfg
       ..['port'] = port
+      ..['webPort'] = webPort
       ..['name'] = name
       ..['salt'] = salt;
     cfgFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(cfg));
@@ -79,7 +92,10 @@ Future<void> main(List<String> args) async {
       dataDir: Directory('$exeDir${sep}data'),
       replayDir: Directory('$exeDir${sep}replays'),
       replayKeep: int.tryParse(env['REPLAY_KEEP']?.trim() ?? '') ?? 2000,
-      discoveryPort: kDiscoveryPort);
+      discoveryPort: kDiscoveryPort,
+      webPort: webPort == 0 ? null : webPort,
+      webDir: Directory('$exeDir${sep}web'),
+      trustProxy: env['TRUST_PROXY']?.trim().toLowerCase() == 'true');
   server.resources.ensureTemplates();
   try {
     await server.start();
@@ -98,6 +114,10 @@ Future<void> main(List<String> args) async {
     for (final a in iface.addresses) {
       logLine('  ${a.address}:$port  (${iface.name})');
     }
+  }
+  final wp = server.webBoundPort;
+  if (wp != null) {
+    logLine('网页版：浏览器打开 http://<上面的地址>:$wp 即可游玩（内网穿透时把 TCP $wp 也映射出去）');
   }
   logLine('输入 help 查看控制台命令');
 

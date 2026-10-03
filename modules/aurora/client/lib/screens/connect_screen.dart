@@ -43,7 +43,9 @@ class _ConnectScreenState extends State<ConnectScreen> {
   void initState() {
     super.initState();
     final app = AppScope.read(context);
-    _addr = TextEditingController(text: app.recentServers.isNotEmpty ? app.recentServers.first : '');
+    // browser: the server that served this page is the natural default
+    final def = kIsWebTransport ? defaultWebAddress() : '';
+    _addr = TextEditingController(text: app.recentServers.isNotEmpty ? app.recentServers.first : def);
   }
 
   void _connect([String? a]) {
@@ -97,10 +99,10 @@ class _ConnectScreenState extends State<ConnectScreen> {
                       TextField(
                         controller: _addr,
                         enabled: !busy,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: '服务器地址',
-                          hintText: '例如 192.168.1.10:7788',
-                          prefixIcon: Icon(Icons.dns),
+                          hintText: kIsWebTransport ? '例如 http://192.168.1.10:7790（网页版端口）' : '例如 192.168.1.10:7788',
+                          prefixIcon: const Icon(Icons.dns),
                         ),
                         onSubmitted: (_) => _connect(),
                       ),
@@ -138,8 +140,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             : const Icon(Icons.login),
                         label: Text(busy ? '连接中…' : '连接服务器'),
                       ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
+                      if (!kIsWebTransport) const SizedBox(height: 8),
+                      if (!kIsWebTransport) OutlinedButton.icon(
                         onPressed: busy || _searching ? null : _searchLan,
                         icon: _searching
                             ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))

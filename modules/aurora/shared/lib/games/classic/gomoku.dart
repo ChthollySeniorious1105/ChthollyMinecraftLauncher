@@ -321,7 +321,7 @@ class GomokuAI {
     // 2-ply: my move, then opponent's best reply
     final top = scored.take(level >= 2 ? 14 : 10).toList();
     var bestP = top.first.$1;
-    var bestV = -1 << 40;
+    var bestV = -0x10000000000; // not `-1 << 40`: shifts are 32-bit on the web
     for (final (p, s) in top) {
       b.cells[p] = color;
       // opponent's strongest attacking reply; my follow-up potential

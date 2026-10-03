@@ -9,7 +9,7 @@ Windows 桌面 Minecraft 启动器（参考 Plain Craft Launcher 的功能范围
 | `core/` | 纯 Dart 核心库 `cml_core`（游戏安装/启动、账号、下载、格式转换、联机隧道、分包管理 `addons/`、BedrockTool / 网易存档封装 `bedrock/`） |
 | `launcher/` | Flutter Windows 客户端（UI）。内嵌 Aurora / Pulse 两个 Flutter 模块；`windows/` 同时编译 `pulse_native.dll` |
 | `server/` | CMLS 联机中继服务端（Java TCP 中继 + 基岩版 UDP 中继） |
-| `modules/aurora/` | Aurora 联机小游戏（`shared` 规则引擎 + `server` 服务端 + `client` 作为 Flutter 包 `aurora_client` 嵌入 CML） |
+| `modules/aurora/` | Aurora 联机小游戏（`shared` 规则引擎 + `server` 服务端 + `client` 作为 Flutter 包 `aurora_client` 嵌入 CML；`client` 也可 `flutter build web` 成网页版，由服务端网页版端口提供，经 WebSocket `/ws` 走同一加密协议） |
 | `modules/pulse/` | Pulse 文字 / 语音聊天（`shared` 协议 + `server` 服务端 + `client` 作为 Flutter 包 `pulse_client` 嵌入 CML，`client/native` 为 C++ 音频引擎） |
 | `tools/bedrocktool/` | BedrockTool（Go，GPL-3）源码，CML 内以原生页面「基岩版工具」驱动其 CLI |
 | `tools/netease/` | 网易基岩版存档解密工具（第三方二进制，CML 页面驱动） |

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -235,7 +234,7 @@ class VoiceEngine extends ChangeNotifier {
           return;
         }
         // iOS: the session is configured in AppDelegate (playAndRecord + voiceChat)
-        if (Platform.isIOS) await _rec.ios?.manageAudioSession(false);
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) await _rec.ios?.manageAudioSession(false);
         final stream = await _rec.startStream(RecordConfig(
           encoder: AudioEncoder.pcm16bits,
           sampleRate: kVoiceRate,

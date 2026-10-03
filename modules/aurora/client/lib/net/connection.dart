@@ -1,15 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:aurora_shared/aurora_shared.dart';
 
+import 'transport.dart';
+
+export 'transport.dart' show ConnectException, kIsWebTransport, defaultWebAddress;
+
 enum ConnState { disconnected, connecting, connected }
 
-/// Raw TCP connection to an Aurora server with frame decoding and keep-alive.
+/// Connection to an Aurora server (TCP natively, WebSocket in the browser)
+/// with frame decoding and keep-alive.
 class Connection {
-  Socket? _socket;
+  Link? _socket;
   FrameDecoder _decoder = FrameDecoder(maxFrame: kMaxServerFrame);
   Timer? _ping;
   final _json = StreamController<Map<String, dynamic>>.broadcast();
@@ -24,25 +28,7 @@ class Connection {
   bool get isOpen => _socket != null;
 
   /// Parse "host:port", "host" or "[v6]:port".
-  static (String, int) parseAddress(String input) {
-    var s = input.trim();
-    if (s.contains('://')) s = s.substring(s.indexOf('://') + 3);
-    if (s.endsWith('/')) s = s.substring(0, s.length - 1);
-    if (s.startsWith('[')) {
-      final end = s.indexOf(']');
-      if (end > 0) {
-        final host = s.substring(1, end);
-        final rest = s.substring(end + 1);
-        final port = rest.startsWith(':') ? int.tryParse(rest.substring(1)) : null;
-        return (host, port ?? kDefaultPort);
-      }
-    }
-    final i = s.lastIndexOf(':');
-    if (i > 0 && s.indexOf(':') == i) {
-      return (s.substring(0, i), int.tryParse(s.substring(i + 1)) ?? kDefaultPort);
-    }
-    return (s, kDefaultPort);
-  }
+  static (String, int) parseAddress(String input) => parseHostPort(input);
 
   SecureChannel? _channel;
 
@@ -56,16 +42,13 @@ class Connection {
   /// static key (base64) so the caller can check it against a pinned value.
   Future<String> connect(String address) async {
     await close();
-    final (host, port) = parseAddress(address);
-    if (host.isEmpty) throw const SocketException('地址为空');
-    final s = await Socket.connect(host, port, timeout: const Duration(seconds: 8));
-    s.setOption(SocketOption.tcpNoDelay, true);
+    final s = await openLink(address, timeout: const Duration(seconds: 8));
     _socket = s;
     _decoder = FrameDecoder(maxFrame: kMaxServerFrame);
     _channel = null;
     final hs = ClientHandshake();
     final ready = Completer<String>();
-    s.listen(
+    s.data.listen(
       (data) {
         List<Frame> frames;
         try {
@@ -80,7 +63,7 @@ class Connection {
             try {
               final m = f.json;
               if (m['t'] == Msg.error) {
-                if (!ready.isCompleted) ready.completeError(SocketException('${m['msg']}'));
+                if (!ready.isCompleted) ready.completeError(ConnectException('${m['msg']}'));
                 _drop('${m['msg']}');
                 return;
               }
@@ -90,7 +73,7 @@ class Connection {
               serverKey = base64.encode(spk);
               if (!ready.isCompleted) ready.complete(serverKey);
             } catch (e) {
-              if (!ready.isCompleted) ready.completeError(const SocketException('服务器握手失败（不是 Aurora 服务器或版本不兼容）'));
+              if (!ready.isCompleted) ready.completeError(const ConnectException('服务器握手失败（不是 Aurora 服务器或版本不兼容）'));
               _drop('握手失败');
               return;
             }
@@ -114,11 +97,11 @@ class Connection {
         }
       },
       onDone: () {
-        if (!ready.isCompleted) ready.completeError(const SocketException('连接被服务器关闭'));
+        if (!ready.isCompleted) ready.completeError(const ConnectException('连接被服务器关闭'));
         _drop('连接已断开');
       },
       onError: (e) {
-        if (!ready.isCompleted) ready.completeError(SocketException('$e'));
+        if (!ready.isCompleted) ready.completeError(ConnectException('$e'));
         _drop('连接错误：$e');
       },
       cancelOnError: true,
@@ -126,7 +109,7 @@ class Connection {
     s.add(encodeJson(hs.hello()));
     final key = await ready.future.timeout(const Duration(seconds: 10), onTimeout: () {
       _drop('握手超时');
-      throw const SocketException('握手超时');
+      throw const ConnectException('握手超时');
     });
     _ping = Timer.periodic(const Duration(seconds: 10), (_) {
       send({'t': Msg.ping, 'ts': DateTime.now().millisecondsSinceEpoch});
@@ -163,11 +146,6 @@ class Connection {
     final s = _socket;
     _socket = null;
     _channel = null;
-    if (s != null) {
-      try {
-        await s.close();
-      } catch (_) {}
-      s.destroy();
-    }
+    if (s != null) await s.close();
   }
 }
