@@ -200,51 +200,74 @@ class LightsBoard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final v = g.view, b = v['board'] as List, n = v['size'] as int;
-    return PartyBoardPage(
-      title: '熄灯挑战',
-      subtitle: g.over
-          ? '${g.name(v['winner'] as int)} 已熄灭全部灯！'
-          : '点击一格，切换自己与上下左右的灯。目标：全部熄灭。',
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (var i = 0; i < g.players; i++)
-              Chip(
-                label: Text('${g.name(i)}：${(v['remaining'] as List)[i]} 盏亮灯'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: b.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: n,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
+    return LayoutBuilder(
+      builder: (context, bounds) {
+        final side = min(
+          480.0,
+          min(
+            bounds.maxWidth - 32,
+            max(n * 52.0 + (n - 1) * 8, bounds.maxHeight - 180),
           ),
-          itemBuilder: (context, i) => FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: b[i] == 1
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            onPressed: !g.spectator && !g.over
-                ? () => g.act({'cell': i})
-                : null,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+        );
+        return PartyBoardPage(
+          title: '熄灯挑战',
+          subtitle: g.over
+              ? '${g.name(v['winner'] as int)} 已熄灭全部灯！'
+              : '点击一格，切换自己与上下左右的灯。目标：全部熄灭。',
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Icon(b[i] == 1 ? Icons.lightbulb : Icons.lightbulb_outline),
-                Text(b[i] == 1 ? '亮' : '灭'),
+                for (var i = 0; i < g.players; i++)
+                  Chip(
+                    label: Text(
+                      '${g.name(i)}：${(v['remaining'] as List)[i]} 盏亮灯',
+                    ),
+                  ),
               ],
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 12),
+            Center(
+              child: SizedBox(
+                width: side,
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: b.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: n,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                  ),
+                  itemBuilder: (context, i) => FilledButton.tonal(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.all(2),
+                      backgroundColor: b[i] == 1
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                    ),
+                    onPressed: !g.spectator && !g.over
+                        ? () => g.act({'cell': i})
+                        : null,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          b[i] == 1 ? Icons.lightbulb : Icons.lightbulb_outline,
+                        ),
+                        Text(b[i] == 1 ? '亮' : '灭'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

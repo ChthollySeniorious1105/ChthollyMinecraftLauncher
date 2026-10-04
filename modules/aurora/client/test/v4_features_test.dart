@@ -149,6 +149,22 @@ void main() {
       tester.view.resetDevicePixelRatio();
     },
   );
+  testWidgets('the complete Lights Out board fits inside the CML panel', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      const TutorialScreen(game: 'lightsout'),
+      const Size(760, 640),
+    );
+    final grid = find.byType(GridView);
+    expect(grid, findsOneWidget);
+    expect(tester.getBottomRight(grid).dy, lessThanOrEqualTo(640));
+    expect(tester.getSize(grid).width, greaterThanOrEqualTo(172));
+    await tester.pumpWidget(const SizedBox());
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+  });
   testWidgets('game finder filters cooperation and picks a compatible game', (
     tester,
   ) async {
