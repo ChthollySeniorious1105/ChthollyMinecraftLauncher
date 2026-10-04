@@ -376,23 +376,32 @@ class _SeatsArea extends StatelessWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    // Long (English) game names wrap instead of pushing the row off a phone screen.
+                    Wrap(
+                      spacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Icon(Icons.sports_esports, color: cs.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${info?['name'] ?? gameId}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.sports_esports, color: cs.primary),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                '${info?['name'] ?? gameId}',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
                         Text(
-                          range[0] == range[1]
-                              ? '${range[0]} 人'
-                              : '${range[0]}~${range[1]} 人',
+                          context.at(
+                            range[0] == range[1] ? '{0} 人' : '{0}~{1} 人',
+                            range,
+                          ),
                           style: TextStyle(color: cs.secondary),
                         ),
                       ],

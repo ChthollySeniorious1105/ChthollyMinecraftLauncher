@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../i18n/aurora_i18n.dart';
 import '../platform/sfx.dart';
+import '../platform/system_fonts.dart';
 import '../theme/themes.dart';
 import '../widgets/chat_panel.dart';
 import '../widgets/mahjong_table.dart';
@@ -63,6 +64,12 @@ class SettingsScreen extends StatelessWidget {
               label: '${(app.uiScale * 100).round()}%',
               onChanged: app.setUiScale,
             ),
+            const SizedBox(height: 16),
+            const AuroraText(
+              '界面字体',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const _FontSetting(),
             const SizedBox(height: 16),
             const AuroraText(
               '音效',
@@ -165,6 +172,151 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shows the current UI font and opens a searchable list of every installed font.
+class _FontSetting extends StatelessWidget {
+  const _FontSetting();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = AppScope.of(context);
+    final current = app.fontFamily;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        current.isEmpty ? context.at('默认（Claude Sans）') : current,
+        style: TextStyle(fontFamily: current.isEmpty ? null : current),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: const AuroraText('从系统已安装的字体中选择，缺字时自动回退'),
+      trailing: Wrap(
+        spacing: 8,
+        children: [
+          if (current.isNotEmpty)
+            TextButton(
+              onPressed: () => app.setFontFamily(''),
+              child: const AuroraText('恢复默认'),
+            ),
+          OutlinedButton(
+            onPressed: () async {
+              final picked = await showDialog<String>(
+                context: context,
+                builder: (_) => _FontPickerDialog(current: current),
+              );
+              if (picked != null) app.setFontFamily(picked);
+            },
+            child: const AuroraText('选择字体'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FontPickerDialog extends StatefulWidget {
+  final String current;
+  const _FontPickerDialog({required this.current});
+  @override
+  State<_FontPickerDialog> createState() => _FontPickerDialogState();
+}
+
+class _FontPickerDialogState extends State<_FontPickerDialog> {
+  final _fonts = systemFontFamilies();
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    return AlertDialog(
+      title: const AuroraText('选择字体'),
+      contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      content: SizedBox(
+        width: 460.0.clamp(0.0, size.width - 80),
+        height: (size.height * 0.6).clamp(200.0, 560.0),
+        child: Column(
+          children: [
+            TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: context.at('搜索字体'),
+              ),
+              onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: FutureBuilder<List<SystemFont>>(
+                future: _fonts,
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final all = snap.data!;
+                  final shown = <SystemFont?>[
+                    null, // the bundled default
+                    for (final f in all)
+                      if (_query.isEmpty || f.matches(_query)) f,
+                  ];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        all.isEmpty
+                            ? context.at('未能读取系统字体，可使用默认字体')
+                            : context.at('共 {0} 款系统字体', [all.length]),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: shown.length,
+                          itemExtent: 52,
+                          itemBuilder: (context, i) {
+                            final f = shown[i]?.family ?? '';
+                            final selected = f == widget.current;
+                            return ListTile(
+                              dense: true,
+                              selected: selected,
+                              trailing: selected
+                                  ? const Icon(Icons.check)
+                                  : null,
+                              title: Text(
+                                shown[i]?.label ??
+                                    context.at('默认（Claude Sans）'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                context.at('字体预览 Aurora 123'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: f.isEmpty ? null : f,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              onTap: () => Navigator.pop(context, f),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const AuroraText('取消'),
+        ),
+      ],
     );
   }
 }

@@ -92,11 +92,12 @@ class _AuroraAppState extends State<AuroraApp> {
         language: app.auroraLanguage,
         child: MaterialApp(
           title: 'Aurora',
-          locale: Locale(app.language),
-          supportedLocales: const [Locale('zh'), Locale('en')],
+          locale: app.auroraLanguage.locale,
+          supportedLocales: AuroraLanguage.locales,
+          localizationsDelegates: AuroraLanguage.delegates,
           debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: _messenger,
-          theme: theme.toThemeData(),
+          theme: theme.toThemeData(fontFamily: app.fontFamily),
           builder: (context, child) {
             final mq = MediaQuery.of(context);
             return MediaQuery(

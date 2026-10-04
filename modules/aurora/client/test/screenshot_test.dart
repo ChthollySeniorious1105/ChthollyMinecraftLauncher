@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:aurora_client/games/boards.dart';
+import 'package:aurora_client/i18n/aurora_i18n.dart';
 import 'package:aurora_client/main.dart';
 import 'package:aurora_client/net/connection.dart';
 import 'package:aurora_client/screens/connect_screen.dart';
@@ -88,40 +89,50 @@ void main() {
         return const RoomScreen();
       },
     };
-    for (final e in screens.entries) {
-      for (final size in sizes.entries) {
-        tester.view.physicalSize = size.value;
-        tester.view.devicePixelRatio = 1;
-        final key = GlobalKey();
-        final theme = auroraThemes.first;
-        final w = e.value();
-        await tester.pumpWidget(AppScope(
-          app: app,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: theme.toThemeData(),
-            builder: (c, child) => RepaintBoundary(key: key, child: DecoratedBox(decoration: theme.backgroundDecoration, child: child)),
-            home: w,
-          ),
-        ));
-        await tester.pump(const Duration(milliseconds: 50));
-        final err = tester.takeException();
-        if (err != null && !'$err'.contains('MissingPluginException')) fail('${e.key} ${size.key}: $err');
-        if (!shots) continue;
-        await tester.runAsync(() async {
-          for (var i = 0; i < 5; i++) {
-            await Future.delayed(const Duration(milliseconds: 100));
-            await tester.pump(const Duration(milliseconds: 50));
-          }
-          final boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-          final img = await boundary.toImage(pixelRatio: 1.0);
-          final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-          File('build/shots/_screen_${e.key}_${size.key}.png')
-            ..parent.createSync(recursive: true)
-            ..writeAsBytesSync(bytes!.buffer.asUint8List());
-        });
+    for (final lang in AuroraLanguage.values) {
+      app.setLanguage(lang.code);
+      for (final e in screens.entries) {
+        for (final size in sizes.entries) {
+          tester.view.physicalSize = size.value;
+          tester.view.devicePixelRatio = 1;
+          final key = GlobalKey();
+          final theme = auroraThemes.first;
+          final w = e.value();
+          await tester.pumpWidget(AppScope(
+            app: app,
+            child: AuroraI18n(
+              language: app.auroraLanguage,
+              child: MaterialApp(
+                debugShowCheckedModeBanner: false,
+                locale: app.auroraLanguage.locale,
+                supportedLocales: AuroraLanguage.locales,
+                localizationsDelegates: AuroraLanguage.delegates,
+                theme: theme.toThemeData(),
+                builder: (c, child) => RepaintBoundary(key: key, child: DecoratedBox(decoration: theme.backgroundDecoration, child: child)),
+                home: w,
+              ),
+            ),
+          ));
+          await tester.pump(const Duration(milliseconds: 50));
+          final err = tester.takeException();
+          if (err != null && !'$err'.contains('MissingPluginException')) fail('${lang.code} ${e.key} ${size.key}: $err');
+          if (!shots) continue;
+          await tester.runAsync(() async {
+            for (var i = 0; i < 5; i++) {
+              await Future.delayed(const Duration(milliseconds: 100));
+              await tester.pump(const Duration(milliseconds: 50));
+            }
+            final boundary = key.currentContext!.findRenderObject() as RenderRepaintBoundary;
+            final img = await boundary.toImage(pixelRatio: 1.0);
+            final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+            File('build/shots/_screen_${lang.code}_${e.key}_${size.key}.png')
+              ..parent.createSync(recursive: true)
+              ..writeAsBytesSync(bytes!.buffer.asUint8List());
+          });
+        }
       }
     }
+    app.setLanguage('zh');
     tester.view.resetPhysicalSize();
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 10));

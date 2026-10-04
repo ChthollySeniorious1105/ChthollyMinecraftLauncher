@@ -233,17 +233,37 @@ class LobbyScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           auroraGameText('${r['gameName']}'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: cs.secondary),
                         ),
                         const Spacer(),
                         Row(
                           children: [
-                            const Icon(Icons.event_seat, size: 16),
-                            Text(' ${r['players']}/${r['seats']}'),
-                            const SizedBox(width: 12),
-                            const Icon(Icons.people, size: 16),
-                            Text(' ${r['members']}'),
-                            const Spacer(),
+                            // Counts shrink first so the status chip always fits narrow cards.
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.event_seat, size: 16),
+                                  Flexible(
+                                    child: Text(
+                                      ' ${r['players']}/${r['seats']}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Icon(Icons.people, size: 16),
+                                  Flexible(
+                                    child: Text(
+                                      ' ${r['members']}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -258,7 +278,7 @@ class LobbyScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                r['playing'] == true ? '对局中' : '等待中',
+                                auroraT(r['playing'] == true ? '对局中' : '等待中'),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.white,

@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 /// Languages supported by Aurora's desktop, embedded and web clients.
 enum AuroraLanguage {
@@ -11,6 +12,23 @@ enum AuroraLanguage {
 
   static AuroraLanguage fromCode(String? code) =>
       values.firstWhere((l) => l.code == code, orElse: () => zhCN);
+
+  /// Flutter locale. Chinese carries the Hans script so Material picks the Simplified strings
+  /// and the text engine prefers Simplified Han glyphs.
+  Locale get locale => switch (this) {
+    zhCN => const Locale.fromSubtags(
+      languageCode: 'zh',
+      scriptCode: 'Hans',
+      countryCode: 'CN',
+    ),
+    en => const Locale('en'),
+  };
+
+  static List<Locale> get locales => [for (final l in values) l.locale];
+
+  /// Material / Cupertino / Widgets strings for every Aurora language. Without these a `zh`
+  /// locale has no MaterialLocalizations and every TextField, tooltip and dialog fails to build.
+  static const delegates = GlobalMaterialLocalizations.delegates;
 }
 
 /// The language used by strings that are created without a BuildContext (for example,
@@ -148,6 +166,8 @@ const Map<String, String> auroraEnglish = {
   'AURORA 加载中…': 'Loading AURORA…',
   '分钟': 'min',
   '人': 'players',
+  '{0} 人': '{0} players',
+  '{0}~{1} 人': '{0}–{1} players',
   '分': 'points',
   '胜': 'wins',
   '局': 'games',
@@ -170,7 +190,8 @@ const Map<String, String> auroraEnglish = {
   '结束': 'End',
   '结束对局？': 'End the game?',
   '离开房间？': 'Leave the room?',
-  '对局进行中，离开后将由电脑托管你的座位。': 'The game is in progress. Leaving will let a bot take your seat.',
+  '对局进行中，离开后将由电脑托管你的座位。':
+      'The game is in progress. Leaving will let a bot take your seat.',
   '完成': 'Done',
   '音量调节': 'Volume',
   '语音音量调节': 'Voice volume',
@@ -204,13 +225,26 @@ const Map<String, String> auroraEnglish = {
   '保存到本机': 'Save locally',
   '复制文件路径': 'Copy file path',
   '删除': 'Delete',
-  '暂无上榜玩家（至少完成 3 局才上榜）': 'No ranked players yet (complete at least 3 games to appear)',
+  '暂无上榜玩家（至少完成 3 局才上榜）':
+      'No ranked players yet (complete at least 3 games to appear)',
   '服务器未返回玩家身份，暂不记录战绩': 'The server did not return a player identity, so stats are not recorded yet',
-  '还没有对局记录（与电脑或好友完成一局后显示）': 'No game records yet (finish a game with a bot or friend to see them)',
+  '还没有对局记录（与电脑或好友完成一局后显示）':
+      'No game records yet (finish a game with a bot or friend to see them)',
   '主题与设置': 'Themes & settings',
   '界面主题': 'Interface theme',
   '主题跟随 CML 启动器，在 CML「设置 → 外观」中切换。': 'The theme follows the CML launcher. Change it in CML Settings → Appearance.',
   '界面缩放': 'Interface scale',
+  '界面字体': 'Interface font',
+  '默认（Claude Sans）': 'Default (Claude Sans)',
+  '从系统已安装的字体中选择，缺字时自动回退':
+      'Choose any installed font; missing characters fall back automatically',
+  '恢复默认': 'Reset',
+  '选择字体': 'Choose font',
+  '搜索字体': 'Search fonts',
+  '未能读取系统字体，可使用默认字体':
+      'Could not read the system fonts; the default font is available',
+  '共 {0} 款系统字体': '{0} system fonts',
+  '字体预览 Aurora 123': 'Font preview 字体 Aurora 123',
   '游戏音效': 'Game sounds',
   '轮到我、开局、胜利/失败、表情提示音': 'Your turn, game start, win/loss and emote sounds',
   '音效音量': 'Sound volume',
@@ -226,7 +260,8 @@ const Map<String, String> auroraEnglish = {
   '标准': 'Standard',
   '强力': 'Strong',
   '按键说话': 'Push to talk',
-  '开启后需按住房间内的“按住说话”按钮才会发送语音': 'When enabled, hold the “push to talk” button in the room to send voice',
+  '开启后需按住房间内的“按住说话”按钮才会发送语音':
+      'When enabled, hold the “push to talk” button in the room to send voice',
   '结束当前派对？': 'End this party?',
   '本次派对累计积分将清空。': 'This party’s accumulated points will be cleared.',
   '创建派对': 'Create party',
@@ -436,11 +471,11 @@ class AuroraText extends StatelessWidget {
     // Register a dependency so const labels rebuild when the language changes.
     AuroraI18n.of(context);
     return Text(
-        auroraT(source),
-        style: style,
-        textAlign: textAlign,
-        maxLines: maxLines,
-        overflow: overflow,
-      );
+      auroraT(source),
+      style: style,
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
+    );
   }
 }

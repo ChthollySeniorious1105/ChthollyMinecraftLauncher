@@ -102,24 +102,29 @@ class _AuroraEmbedState extends State<AuroraEmbed> {
         app: app,
         child: AuroraI18n(
           language: app.auroraLanguage,
-          child: Theme(
-            data: theme.toThemeData(),
-            child: ScaffoldMessenger(
-              key: _messenger,
-              child: MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  size: Size(panel.maxWidth, panel.maxHeight),
-                  textScaler: TextScaler.linear(app.uiScale),
-                ),
-                child: DecoratedBox(
-                  decoration: theme.backgroundDecoration,
-                  child: HeroControllerScope.none(
-                    // The route is generated once; _AuroraHome re-reads AppState on every notification.
-                    child: ResumeScope(
-                      app: app,
-                      child: Navigator(
-                        onGenerateRoute: (_) => MaterialPageRoute(
-                          builder: (_) => const _AuroraHome(),
+          child: Localizations.override(
+            context: context,
+            locale: app.auroraLanguage.locale,
+            delegates: AuroraLanguage.delegates,
+            child: Theme(
+              data: theme.toThemeData(fontFamily: app.fontFamily),
+              child: ScaffoldMessenger(
+                key: _messenger,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    size: Size(panel.maxWidth, panel.maxHeight),
+                    textScaler: TextScaler.linear(app.uiScale),
+                  ),
+                  child: DecoratedBox(
+                    decoration: theme.backgroundDecoration,
+                    child: HeroControllerScope.none(
+                      // The route is generated once; _AuroraHome re-reads AppState on every notification.
+                      child: ResumeScope(
+                        app: app,
+                        child: Navigator(
+                          onGenerateRoute: (_) => MaterialPageRoute(
+                            builder: (_) => const _AuroraHome(),
+                          ),
                         ),
                       ),
                     ),

@@ -23,7 +23,12 @@ class AuroraTheme {
 
   bool get dark => brightness == Brightness.dark;
 
-  ThemeData toThemeData() {
+  /// The bundled UI font; [toThemeData] uses it when no system font has been chosen.
+  static const defaultFont = 'ClaudeSansStd';
+
+  /// [fontFamily] is an installed system font picked in settings (empty = [defaultFont]).
+  /// The bundled font and the CJK fonts stay in the fallback chain for glyphs it lacks.
+  ThemeData toThemeData({String fontFamily = ''}) {
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: brightness,
@@ -36,8 +41,9 @@ class AuroraTheme {
       useMaterial3: true,
       brightness: brightness,
       scaffoldBackgroundColor: Colors.transparent,
-      fontFamily: 'ClaudeSansStd',
-      fontFamilyFallback: const [
+      fontFamily: fontFamily.isEmpty ? defaultFont : fontFamily,
+      fontFamilyFallback: [
+        if (fontFamily.isNotEmpty) defaultFont,
         'Microsoft YaHei',
         'PingFang SC',
         'Noto Sans CJK SC',

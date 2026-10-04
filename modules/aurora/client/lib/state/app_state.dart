@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:aurora_shared/aurora_shared.dart';
 import 'package:flutter/foundation.dart';
@@ -82,6 +83,9 @@ class AppState extends ChangeNotifier {
   String language = 'zh';
   List<String> recentServers = [];
   double uiScale = 1.0;
+
+  /// Installed font family used for the interface; empty = the bundled Claude Sans.
+  String fontFamily = '';
 
   /// Random per-install identity (never shown); the server derives a stable
   /// player id from it for 战绩 / 回放.
@@ -175,9 +179,7 @@ class AppState extends ChangeNotifier {
         prefs.getInt('avatar') ?? 1 + DateTime.now().millisecond % kAvatarCount;
     themeId = prefs.getString('theme') ?? 'majsoul';
     final systemLanguage =
-        WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en'
-        ? 'en'
-        : 'zh';
+        PlatformDispatcher.instance.locale.languageCode == 'en' ? 'en' : 'zh';
     language =
         initialLanguage ??
         prefs.getString('language') ??
@@ -185,6 +187,7 @@ class AppState extends ChangeNotifier {
     currentAuroraLanguage = AuroraLanguage.fromCode(language);
     recentServers = prefs.getStringList('servers') ?? [];
     uiScale = prefs.getDouble('uiScale') ?? 1.0;
+    fontFamily = prefs.getString('fontFamily') ?? '';
     if (kIsWebTransport)
       pendingInvitation = AuroraInvitation.parse(Uri.base.toString());
     uid = prefs.getString('uid') ?? '';
@@ -222,7 +225,8 @@ class AppState extends ChangeNotifier {
           ...g,
           'name': auroraGameText('${g['name']}'),
           'category': auroraCategory('${g['category']}'),
-          'description': auroraEnglish['${g['description']}'] ?? g['description'],
+          'description':
+              auroraEnglish['${g['description']}'] ?? g['description'],
         };
       }
     }
@@ -251,6 +255,12 @@ class AppState extends ChangeNotifier {
   void setUiScale(double v) {
     uiScale = v;
     prefs.setDouble('uiScale', v);
+    notifyListeners();
+  }
+
+  void setFontFamily(String family) {
+    fontFamily = family;
+    prefs.setString('fontFamily', family);
     notifyListeners();
   }
 
