@@ -41,8 +41,9 @@ dependencies:
 
   shared_preferences: ^2.5.5
   path_provider: ^2.1.6
-  archive: 4.0.0
-  web: 1.1.0
+  archive: ^4.0.0
+  web: ^1.1.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   aurora_server:

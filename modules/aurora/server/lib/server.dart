@@ -10,6 +10,8 @@ import 'package:crypto/crypto.dart' as hash;
 
 import 'replay_store.dart';
 import 'stats.dart';
+import 'party.dart';
+import 'daily.dart';
 
 export 'ai_service.dart';
 export 'env.dart';
@@ -208,6 +210,8 @@ class Room implements GameHost {
   /// 本房间连续对局积分榜 (key -> row), cleared when the game type changes.
   final Map<String, Map<String, dynamic>> tally = {};
 
+  PartyNight? party;
+
   /// Pending undo/draw request.
   _Request? request;
   int _nextRequestId = 1;
@@ -289,6 +293,7 @@ class Room implements GameHost {
         'turnTimeout': turnTimeout,
         'botLevel': botLevel,
         'tally': [for (final r in tally.values) r],
+        'party': party?.toJson(),
         'caps': caps,
         'request': request?.toJson(),
         'seats': [
@@ -627,7 +632,8 @@ class Room implements GameHost {
     if (playing) throw GameError('对局进行中');
   }
 
-  void setGame(Client c, String game, Map<String, dynamic>? opts) {
+  void setGame(Client c, String game, Map<String, dynamic>? opts, {bool partyTransition = false}) {
+    if (party != null && !partyTransition) throw GameError('请使用派对之夜的下一局，或先结束派对');
     requireHost(c);
     requireNotPlaying();
     final d = server.findDef(game);
@@ -641,6 +647,44 @@ class Room implements GameHost {
       s.ready = false;
     }
     pushRoom();
+  }
+
+  void configureParty(Client c, Object? raw) {
+    requireHost(c); requireNotPlaying();
+    if (raw is! List || raw.length > 8) throw GameError('派对队列最多 8 款游戏');
+    if (raw.isEmpty) { party = null; pushRoom(); return; }
+    final ids = raw.map((x) => asStr(x)).toList();
+    if (ids.length < 2 || ids.toSet().length != ids.length) throw GameError('请选择 2~8 款不同游戏');
+    final count = seats.where((s) => !s.empty).length;
+    for (final id in ids) {
+      final d = server.findDef(id);
+      if (d == null) throw GameError('未知游戏');
+      final r = d.defaultOptionsRange();
+      if (count < r.$1 || count > r.$2) throw GameError('${d.name} 需要 ${r.$1}~${r.$2} 人，请先调整座位');
+    }
+    party = PartyNight(ids);
+    setGame(c, ids.first, null, partyTransition: true);
+    systemChat('派对之夜已开始：共 ${ids.length} 款游戏，每局第一名得 100 分，其他名次按人数折算。');
+  }
+
+  void voteParty(Client c, String game) {
+    if (seatOf(c) < 0) throw GameError('入座玩家才可以投票');
+    final p = party;
+    if (p == null) throw GameError('当前没有派对');
+    p.vote(c.id, game); pushRoom();
+  }
+
+  void nextParty(Client c) {
+    requireHost(c); requireNotPlaying();
+    final p = party;
+    if (p == null || !p.roundComplete || p.finished) throw GameError('当前没有可继续的派对对局');
+    final count = seats.where((s) => !s.empty).length;
+    final next = p.nextChoice(members.where((m) => m.online && seatOf(m) >= 0).map((m) => m.id).toSet(), (id) {
+      final r = server.findDef(id)!.defaultOptionsRange(); return count >= r.$1 && count <= r.$2;
+    });
+    if (next == null) throw GameError('剩余游戏与当前人数不符，请调整座位后再试');
+    p.advance(next); setGame(c, next, null, partyTransition: true);
+    systemChat('派对第 ${p.index + 1}/${p.queue.length} 局：${def.name}，请准备。');
   }
 
   void _clearFinished() {
@@ -714,6 +758,7 @@ class Room implements GameHost {
 
   void startGame(Client c) {
     requireHost(c);
+    if (party?.roundComplete == true) throw GameError('请先选择派对下一局，或结束派对');
     requireNotPlaying();
     _clearFinished();
     final occupied = [for (var i = 0; i < seats.length; i++) if (!seats[i].empty) i];
@@ -1142,6 +1187,7 @@ class Room implements GameHost {
         row['points'] = (row['points'] as int) + (pl[i] == 1 ? 3 : max(0, pl.length - pl[i]));
       }
     }
+    party?.record([for (final p in _players) {'key': p.pid.isNotEmpty ? p.pid : '${p.bot}:${p.name}', 'name': p.name, 'avatar': p.avatar}], pl);
     _finishReplay(e, pl);
   }
 
@@ -1306,6 +1352,10 @@ class AuroraServer {
   final String salt;
   final StatsStore stats;
   final ReplayStore replays;
+  late final DailyChallenges daily = DailyChallenges(_dataDir, salt);
+  final Directory? _dataDir;
+  final String publicWebUrl;
+  final String publicNativeAddress;
 
   /// Extra game definitions (tests); looked up after the global registry.
   final List<GameDef> extraGames;
@@ -1341,8 +1391,11 @@ class AuroraServer {
       this.discoveryPort,
       this.webPort,
       this.webDir,
-      this.trustProxy = false})
-      : resources = ServerResources(resourceDir ?? Directory('words')),
+      this.trustProxy = false,
+      this.publicWebUrl = '',
+      this.publicNativeAddress = ''})
+      : _dataDir = dataDir,
+        resources = ServerResources(resourceDir ?? Directory('words')),
         identity = identity ?? ServerIdentity.fromSeed(ServerIdentity.newSeed()),
         salt = salt ?? _randomHex(16),
         stats = StatsStore(dataDir),
@@ -1860,6 +1913,9 @@ class AuroraServer {
       'ai': aiOn,
       'aiLabel': aiOn ? a.label : '',
       'pid': c.pid,
+      'publicWebUrl': publicWebUrl,
+      'publicNativeAddress': publicNativeAddress,
+      'webPort': webBoundPort,
     };
   }
 
@@ -1939,6 +1995,14 @@ class AuroraServer {
           c.avatar = asInt(m['avatar'], c.avatar).clamp(1, kAvatarCount);
           c.send(_welcome(c));
           c.room?.pushRoom();
+        case Msg.daily:
+          c.send(daily.snapshot(c.pid));
+        case Msg.dailyStart:
+          daily.start(c.pid, asStr(m['kind'])); c.send(daily.snapshot(c.pid));
+        case Msg.dailyAction:
+          final a = m['a'];
+          if (a is! Map<String, dynamic>) throw GameError('无效挑战操作');
+          daily.act(c.pid, c.name, c.avatar, a); c.send(daily.snapshot(c.pid));
         case Msg.listRooms:
           c.send(_roomList());
         case Msg.createRoom:
@@ -2053,6 +2117,12 @@ class AuroraServer {
               room.setPrivate(c, asBool(m['private']));
             case Msg.setTimeout:
               room.setTurnTimeout(c, asInt(m['sec'], 0));
+            case Msg.partyConfig:
+              room.configureParty(c, m['queue']);
+            case Msg.partyVote:
+              room.voteParty(c, asStr(m['game']));
+            case Msg.partyNext:
+              room.nextParty(c);
             case Msg.setGame:
               room.setGame(c, asStr(m['game']), _optMap(m['options']));
             case Msg.addBot:

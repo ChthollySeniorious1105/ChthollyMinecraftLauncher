@@ -14,7 +14,7 @@ const int kMaxFrame = 256 * 1024;
 /// views can be far larger than [kMaxFrame], e.g. the 传话画画 gallery carries
 /// every drawing of every book.
 const int kMaxServerFrame = 32 * 1024 * 1024;
-const int kProtocolVersion = 3;
+const int kProtocolVersion = 4;
 
 /// UDP port for LAN server discovery (client broadcasts [kDiscoveryHello]).
 const int kDiscoveryPort = 7789;
@@ -112,6 +112,13 @@ String sanitizeText(String s) => String.fromCharCodes(s.runes.where((r) =>
 
 /// Message type keys ("t" field).
 abstract class Msg {
+  static const partyConfig = 'party_config';
+  static const partyVote = 'party_vote';
+  static const partyNext = 'party_next';
+  static const daily = 'daily';
+  static const dailyStart = 'daily_start';
+  static const dailyAction = 'daily_action';
+  static const dailyState = 'daily_state';
   // client -> server
   static const hello = 'hello'; // {name, avatar, token, ver}
   static const setProfile = 'set_profile'; // {name, avatar}

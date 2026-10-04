@@ -12,6 +12,7 @@ import 'screens/room_screen.dart';
 import 'state/app_state.dart';
 import 'theme/themes.dart';
 import 'widgets/mahjong_table.dart';
+import 'platform/resume_scope.dart';
 
 export 'theme/themes.dart' show AuroraTheme, hostTheme, assetPrefix;
 
@@ -81,25 +82,25 @@ class _AuroraEmbedState extends State<AuroraEmbed> {
     final theme = widget.theme;
     final app = _app;
     if (app == null) return const Center(child: CircularProgressIndicator());
-    return AppScope(
+    return LayoutBuilder(builder: (context, panel) => AppScope(
       app: app,
       child: Theme(
         data: theme.toThemeData(),
         child: ScaffoldMessenger(
           key: _messenger,
           child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(app.uiScale)),
+            data: MediaQuery.of(context).copyWith(size: Size(panel.maxWidth, panel.maxHeight), textScaler: TextScaler.linear(app.uiScale)),
             child: DecoratedBox(
               decoration: theme.backgroundDecoration,
               child: HeroControllerScope.none(
                 // The route is generated once; _AuroraHome re-reads AppState on every notification.
-                child: Navigator(onGenerateRoute: (_) => MaterialPageRoute(builder: (_) => const _AuroraHome())),
+                child: ResumeScope(app: app, child: Navigator(onGenerateRoute: (_) => MaterialPageRoute(builder: (_) => const _AuroraHome()))),
               ),
             ),
           ),
         ),
       ),
-    );
+    ));
   }
 }
 

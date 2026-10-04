@@ -50,6 +50,7 @@ class Connection {
     final ready = Completer<String>();
     s.data.listen(
       (data) {
+        if (_socket != s) return;
         List<Frame> frames;
         try {
           frames = _decoder.add(data);
@@ -97,10 +98,12 @@ class Connection {
         }
       },
       onDone: () {
+        if (_socket != s) return;
         if (!ready.isCompleted) ready.completeError(const ConnectException('连接被服务器关闭'));
         _drop('连接已断开');
       },
       onError: (e) {
+        if (_socket != s) return;
         if (!ready.isCompleted) ready.completeError(ConnectException('$e'));
         _drop('连接错误：$e');
       },

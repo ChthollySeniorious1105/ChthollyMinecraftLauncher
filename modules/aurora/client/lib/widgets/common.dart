@@ -114,7 +114,8 @@ class GameContext {
 
   /// Room options override (replays / single-player games have no room).
   final Map<String, dynamic>? optionsOverride;
-  const GameContext(this.app, this.state, {this.replay = false, this.optionsOverride});
+  final void Function(Map<String, dynamic>)? actionOverride;
+  const GameContext(this.app, this.state, {this.replay = false, this.optionsOverride, this.actionOverride});
 
   Map<String, dynamic> get view => state.view;
   int get seat => state.seat;
@@ -125,7 +126,7 @@ class GameContext {
   int avatar(int s) => s >= 0 && s < state.avatars.length ? state.avatars[s] : 0;
   bool bot(int s) => s >= 0 && s < state.bots.length && state.bots[s];
   void act(Map<String, dynamic> a) {
-    if (!replay) app.action(a);
+    if (!replay) (actionOverride ?? app.action)(a);
   }
   /// Felt colour of the current theme, for board backgrounds.
   Color get table => themeById(app.themeId).table;

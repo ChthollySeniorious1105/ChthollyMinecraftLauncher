@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'ai.dart';
+import 'catalog.dart';
 
 /// Thrown by engines when an action is illegal. The message is shown to the player.
 class GameError implements Exception {
@@ -253,6 +254,7 @@ class GameDef {
         'name': name,
         'category': category,
         'description': description,
+        ...gameTraits(id, category),
         'options': [for (final o in options) o.toJson()],
         'bots': botSupport,
         // rules are compiled into every client (same shared package), so the

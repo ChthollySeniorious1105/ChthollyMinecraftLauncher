@@ -16,7 +16,7 @@
 # Every exe/dll we build is signed with SHA-256 and an RFC 3161 timestamp.
 param(
   [switch]$SkipTests, [switch]$NoZip, [switch]$SkipTools, [switch]$SkipApps, [switch]$SkipAddons, [switch]$WithServers,
-  [string]$Version = "0.2.2", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
+  [string]$Version = "0.2.3", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
   # Pulse AI weights (not in git, see .gitignore): base models in rvc\, extra voices in rvc\voice\.
   [string]$PulseModels = "$PSScriptRoot\rvc",
   [string]$PulseVoices = "$PSScriptRoot\rvc\voice"
@@ -52,6 +52,7 @@ function Invoke-Step([string]$name, [scriptblock]$body) {
 
 Invoke-Step "core" {
   Push-Location "$root\core"; dart pub get
+  if ($LASTEXITCODE -ne 0) { throw "core dependencies failed" }
   if (-not $SkipTests) { dart test; if ($LASTEXITCODE -ne 0) { throw "core tests failed" } }
   Pop-Location
 }
@@ -60,6 +61,7 @@ Invoke-Step "core" {
 if (-not $SkipTests) {
   Invoke-Step "CMLS tests" {
     Push-Location "$root\server"; dart pub get
+    if ($LASTEXITCODE -ne 0) { throw "server dependencies failed" }
     dart test; if ($LASTEXITCODE -ne 0) { throw "server tests failed" }
     Pop-Location
   }
@@ -68,6 +70,7 @@ if (-not $SkipTests) {
 Invoke-Step "launcher" {
   Push-Location "$root\launcher"
   flutter pub get
+  if ($LASTEXITCODE -ne 0) { throw "launcher dependencies failed" }
   if (-not $SkipTests) { flutter test test\i18n_test.dart; if ($LASTEXITCODE -ne 0) { throw "launcher tests failed" } }
   $defines = @("--dart-define=CML_VERSION=$Version", "--dart-define=CML_REPO=ChthollySeniorious1105/ChthollyMinecraftLauncher")
   if ($MsaClientId) { $defines += "--dart-define=CML_MSA_CLIENT_ID=$MsaClientId" }

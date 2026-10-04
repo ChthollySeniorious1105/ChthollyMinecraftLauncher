@@ -95,6 +95,8 @@ Future<void> main(List<String> args) async {
       discoveryPort: kDiscoveryPort,
       webPort: webPort == 0 ? null : webPort,
       webDir: Directory('$exeDir${sep}web'),
+      publicWebUrl: env['PUBLIC_WEB_URL']?.trim() ?? '',
+      publicNativeAddress: env['PUBLIC_TCP_ADDRESS']?.trim() ?? '',
       trustProxy: env['TRUST_PROXY']?.trim().toLowerCase() == 'true');
   server.resources.ensureTemplates();
   try {

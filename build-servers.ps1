@@ -9,8 +9,8 @@
 #   (Aurora also ships its browser client in web\ — served on the web port, default 7790)
 #   CML-servers-src-<ver>.zip   source of all three servers (+ shared libs, core) — buildable with `dart compile exe`
 #
-#   powershell -ExecutionPolicy Bypass -File build-servers.ps1 [-Version 0.2.2] [-SkipTests] [-SourceOnly]
-param([string]$Version = "0.2.2", [switch]$SkipTests, [switch]$SourceOnly)
+#   powershell -ExecutionPolicy Bypass -File build-servers.ps1 [-Version 0.2.3] [-SkipTests] [-SourceOnly]
+param([string]$Version = "0.2.3", [switch]$SkipTests, [switch]$SourceOnly)
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $env:PATH = (($env:PATH -replace '"','') -split ';' | Where-Object { $_ -ne '' } | Select-Object -Unique) -join ';'
@@ -33,6 +33,7 @@ if (-not $SourceOnly) {
     Write-Host "== $($s.Name) ==" -ForegroundColor Cyan
     Push-Location (Join-Path $root $s.Dir)
     dart pub get | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "$($s.Name) dependencies failed" }
     if (-not $SkipTests) { dart test; if ($LASTEXITCODE -ne 0) { throw "$($s.Name) tests failed" } }
     $stage = Join-Path $out $s.Name
     New-Item -ItemType Directory -Force $stage | Out-Null
@@ -55,7 +56,7 @@ if (-not $SourceOnly) {
 
 Write-Host "== source package ==" -ForegroundColor Cyan
 # Source dirs needed to build every server (path dependencies included). Runtime data / secrets are excluded.
-$srcDirs = @("server", "core", "modules\aurora\server", "modules\aurora\shared", "modules\pulse\server", "modules\pulse\shared")
+$srcDirs = @("server", "core", "modules\aurora\server", "modules\aurora\shared", "modules\aurora\client", "modules\pulse\server", "modules\pulse\shared")
 $exclude = '\\(\.dart_tool|build|data|replays|words)\\|server_identity\.key$|\.env$|aurora_server\.json$|pulse_server\.json$|\.exe$'
 $srcStage = Join-Path $out "src\CML-servers-src-$Version"
 foreach ($d in $srcDirs) {

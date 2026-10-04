@@ -16,6 +16,8 @@ const envKeys = [
   'AI_DAILY_LIMIT',
   'REPLAY_KEEP',
   'TRUST_PROXY',
+  'PUBLIC_WEB_URL',
+  'PUBLIC_TCP_ADDRESS',
 ];
 
 const envTemplate = '''# Aurora 服务器配置（.env）
@@ -55,6 +57,10 @@ REPLAY_KEEP=2000
 # 网页版端口在 aurora_server.json 的 webPort 或启动参数 --web-port 设置（0 = 关闭）。
 # 只有把网页版放在 nginx / Caddy 等反向代理后面时才设为 true（从 X-Forwarded-For 读取玩家 IP）
 TRUST_PROXY=false
+# 好友能够访问的网页入口，用于二维码与邀请链接（内网穿透时填映射后的地址）
+PUBLIC_WEB_URL=
+# 好友能够访问的原生客户端 TCP 地址，例如 play.example.com:7788
+PUBLIC_TCP_ADDRESS=
 ''';
 
 /// Parse `KEY=VALUE` lines: `#` comments (whole-line, or after whitespace for

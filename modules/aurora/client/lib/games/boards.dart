@@ -36,9 +36,11 @@ import 'abstract2/boards.dart';
 import 'euro2/boards.dart';
 import 'light/boards.dart';
 import 'party3/boards.dart';
+import 'party4/boards.dart';
 
 /// Game id -> board widget. Each game package owns its own boards.dart map.
 final Map<String, BoardBuilder> boardRegistry = {
+  ...party4Boards,
   ...riichiBoards,
   ...sichuanBoards,
   ...pokerBoards,

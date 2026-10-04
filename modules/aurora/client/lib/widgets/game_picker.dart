@@ -1,3 +1,5 @@
+import 'dart:math';
+import 'package:aurora_shared/aurora_shared.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -34,6 +36,8 @@ class GamePickerGrid extends StatefulWidget {
 class _GamePickerGridState extends State<GamePickerGrid> {
   String _q = '';
   String? _cat;
+  int _playersFilter = 0, _minutes = 0, _difficulty = 0;
+  String _mode = '';
 
   static String _players(Map<String, dynamic> g) {
     final p = (g['players'] as List?)?.cast<int>();
@@ -49,6 +53,7 @@ class _GamePickerGridState extends State<GamePickerGrid> {
     for (final g in widget.games) {
       cats.putIfAbsent('${g['category']}', () => []);
       if (_cat != null && g['category'] != _cat) continue;
+      if (!matchesGame(g, players: _playersFilter, minutes: _minutes, difficulty: _difficulty, mode: _mode)) continue;
       if (q.isNotEmpty &&
           !'${g['name']}'.toLowerCase().contains(q) &&
           !'${g['id']}'.contains(q) &&
@@ -66,7 +71,7 @@ class _GamePickerGridState extends State<GamePickerGrid> {
       return null;
     }
 
-    final showQuick = app != null && q.isEmpty && _cat == null;
+    final showQuick = app != null && q.isEmpty && _cat == null && _playersFilter == 0 && _minutes == 0 && _difficulty == 0 && _mode.isEmpty;
     final favs = showQuick ? [for (final id in app.favoriteGames) ?byId(id)] : const <Map<String, dynamic>>[];
     final recents = showQuick
         ? [for (final id in app.recentGames) if (!app.favoriteGames.contains(id)) ?byId(id)]
@@ -87,6 +92,13 @@ class _GamePickerGridState extends State<GamePickerGrid> {
           ],
         );
     return Column(children: [
+      SizedBox(height: 46, child: ListView(scrollDirection: Axis.horizontal, children: [
+        _filter<int>('人数', _playersFilter, {0: '不限', for (var i = 1; i <= 12; i++) i: '$i 人'}, (v) => _playersFilter = v),
+        _filter<int>('时长', _minutes, {0: '不限', 5: '约 5 分钟', 15: '约 15 分钟', 30: '30 分钟内', 60: '约 1 小时'}, (v) => _minutes = v),
+        _filter<int>('难度', _difficulty, {0: '不限', 1: '入门', 2: '中等及以下', 3: '含进阶'}, (v) => _difficulty = v),
+        _filter<String>('玩法', _mode, {'': '不限', 'coop': '合作', 'competitive': '对战'}, (v) => _mode = v),
+        TextButton.icon(onPressed: shown.isEmpty ? null : () { final choices = shown.expand((e) => e.value).toList(); widget.onPick('${choices[Random().nextInt(choices.length)]['id']}'); }, icon: const Icon(Icons.shuffle, size: 18), label: const Text('帮我选')),
+      ])),
       Row(children: [
         Expanded(
           child: TextField(
@@ -144,6 +156,11 @@ class _GamePickerGridState extends State<GamePickerGrid> {
       ),
     ]);
   }
+
+  Widget _filter<T>(String label, T value, Map<T, String> choices, void Function(T) changed) => Padding(
+    padding: const EdgeInsets.only(right: 8), child: PopupMenuButton<T>(initialValue: value,
+      onSelected: (v) => setState(() => changed(v)), itemBuilder: (_) => [for (final e in choices.entries) PopupMenuItem(value: e.key, child: Text(e.value))],
+      child: Chip(label: Text('$label：${choices[value]}'), avatar: const Icon(Icons.filter_list, size: 16))));
 
   Widget _chip(BuildContext context, Map<String, dynamic> g, AppState? app) {
     final cs = Theme.of(context).colorScheme;

@@ -34,10 +34,12 @@ import 'games/euro2/defs.dart';
 import 'games/light/defs.dart';
 import 'games/party3/defs.dart';
 import 'src/engine.dart';
+import 'games/party4/defs.dart';
 
 /// All game types known to the server and clients. Order = lobby order.
 /// Each game package owns its own defs.dart list; add games there, not here.
 final List<GameDef> gameRegistry = [
+  ...party4Games,
   ...riichiGames,
   ...sichuanGames,
   ...mcrGames,

@@ -12,6 +12,7 @@ import 'state/app_state.dart';
 import 'net/connection.dart';
 import 'theme/themes.dart';
 import 'widgets/mahjong_table.dart';
+import 'platform/resume_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -95,10 +96,10 @@ class _AuroraAppState extends State<AuroraApp> {
             ),
           );
         },
-        home: AnimatedSwitcher(
+        home: ResumeScope(app: app, child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
           child: KeyedSubtree(key: ValueKey(home.runtimeType), child: home),
-        ),
+        )),
       ),
     );
   }

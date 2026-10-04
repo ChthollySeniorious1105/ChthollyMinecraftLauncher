@@ -81,6 +81,10 @@ class AppState extends ChangeNotifier {
   bool serverAi = false;
   String aiLabel = '';
   String pid = '';
+  String publicWebUrl = '', publicNativeAddress = '';
+  int? webPort;
+  AuroraInvitation? pendingInvitation;
+  Map<String, dynamic>? dailyState;
 
   // replays / stats (filled by server replies)
   List<ReplayMeta>? replayList;
@@ -118,6 +122,7 @@ class AppState extends ChangeNotifier {
   String serverName = '';
   int myId = 0;
   String _token = '';
+  DateTime _resumeSaved = DateTime.fromMillisecondsSinceEpoch(0);
   bool _wantConnected = false;
   Timer? _reconnectTimer;
 
@@ -149,6 +154,7 @@ class AppState extends ChangeNotifier {
     themeId = prefs.getString('theme') ?? 'majsoul';
     recentServers = prefs.getStringList('servers') ?? [];
     uiScale = prefs.getDouble('uiScale') ?? 1.0;
+    if (kIsWebTransport) pendingInvitation = AuroraInvitation.parse(Uri.base.toString());
     uid = prefs.getString('uid') ?? '';
     if (uid.length != 64) {
       final r = Random.secure();
@@ -366,7 +372,21 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> connect(String addr) async {
+    final invite = AuroraInvitation.parse(addr);
+    if (invite != null) {
+      pendingInvitation = invite;
+      if (!kIsWebTransport && invite.nativeAddress.isEmpty) {
+        lastError = '该邀请没有客户端地址，请向房主获取客户端地址后连接'; notifyListeners(); return;
+      }
+      addr = kIsWebTransport ? invite.webUrl : invite.nativeAddress;
+    }
     address = addr.trim();
+    _token = '';
+    try {
+      final saved = jsonDecode(prefs.getString('resume:$address') ?? '{}') as Map;
+      final at = asInt(saved['at'], 0);
+      if (saved['name'] == name && DateTime.now().millisecondsSinceEpoch - at < 600000) _token = asStr(saved['token']);
+    } catch (_) {}
     _wantConnected = true;
     lastError = null;
     await _doConnect();
@@ -436,7 +456,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> resumeConnection() async {
+    if (_wantConnected && state != ConnState.connecting) await _doConnect();
+  }
+
   Future<void> disconnect() async {
+    await prefs.remove('resume:$address');
+    dailyState = null;
     _wantConnected = false;
     _reconnectTimer?.cancel();
     await voice.setMic(false);
@@ -469,6 +495,10 @@ class AppState extends ChangeNotifier {
         lastError = null;
         myId = asInt(m['id'], 0);
         _token = asStr(m['token']);
+        prefs.setString('resume:$address', jsonEncode({'token': _token, 'at': DateTime.now().millisecondsSinceEpoch, 'name': name}));
+        publicWebUrl = asStr(m['publicWebUrl']);
+        publicNativeAddress = asStr(m['publicNativeAddress']);
+        webPort = m['webPort'] is int ? m['webPort'] as int : null;
         serverName = asStr(m['server']);
         games = [for (final g in (m['games'] as List? ?? [])) (g as Map).cast<String, dynamic>()];
         serverAi = m['ai'] == true;
@@ -480,6 +510,8 @@ class AppState extends ChangeNotifier {
           if (recentServers.length > 8) recentServers = recentServers.sublist(0, 8);
           prefs.setStringList('servers', recentServers);
         }
+      case Msg.dailyState:
+        dailyState = m;
       case Msg.rooms:
         rooms = [for (final r in (m['rooms'] as List? ?? [])) (r as Map).cast<String, dynamic>()];
         onlineCount = asInt(m['online'], 0);
@@ -497,6 +529,7 @@ class AppState extends ChangeNotifier {
           chat.clear();
           game = null;
         }
+        if (room != null && pendingInvitation?.room == room!['id']) pendingInvitation = null;
         if (room != null && room!['hasGame'] != true) game = null;
         if (game == null) _cancelAutoLeave();
         if (room == null || prevId != room!['id']) _leftFinished = false;
@@ -572,6 +605,10 @@ class AppState extends ChangeNotifier {
       case Msg.toast:
         _toasts.add(asStr(m['msg']));
       case Msg.pong:
+        if (_token.isNotEmpty && DateTime.now().difference(_resumeSaved).inSeconds >= 60) {
+          _resumeSaved = DateTime.now();
+          prefs.setString('resume:$address', jsonEncode({'token': _token, 'at': _resumeSaved.millisecondsSinceEpoch, 'name': name}));
+        }
         return;
     }
     notifyListeners();

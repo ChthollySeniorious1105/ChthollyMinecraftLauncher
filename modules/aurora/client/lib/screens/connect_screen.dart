@@ -8,6 +8,7 @@ import 'local_game_screen.dart';
 import 'profile_screen.dart';
 import 'replay_screen.dart';
 import 'settings_screen.dart';
+import 'activity_screen.dart';
 
 /// Server address entry ("IP:端口").
 class ConnectScreen extends StatefulWidget {
@@ -45,7 +46,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
     final app = AppScope.read(context);
     // browser: the server that served this page is the natural default
     final def = kIsWebTransport ? defaultWebAddress() : '';
-    _addr = TextEditingController(text: app.recentServers.isNotEmpty ? app.recentServers.first : def);
+    _addr = TextEditingController(text: app.pendingInvitation?.url ?? (app.recentServers.isNotEmpty ? app.recentServers.first : def));
   }
 
   void _connect([String? a]) {
@@ -77,6 +78,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                       shadows: [Shadow(color: cs.secondary, blurRadius: 24)],
                     )),
                 Text('联机小游戏', style: TextStyle(fontSize: 16, letterSpacing: 6, color: cs.onSurface.withValues(alpha: 0.8))),
+                TextButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityScreen())), icon: const Icon(Icons.school), label: const Text('离线新手练习')),
                 const SizedBox(height: 28),
                 Card(
                   child: Padding(
@@ -100,7 +102,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         controller: _addr,
                         enabled: !busy,
                         decoration: InputDecoration(
-                          labelText: '服务器地址',
+                          labelText: '服务器地址或邀请链接',
                           hintText: kIsWebTransport ? '例如 http://192.168.1.10:7790（网页版端口）' : '例如 192.168.1.10:7788',
                           prefixIcon: const Icon(Icons.dns),
                         ),

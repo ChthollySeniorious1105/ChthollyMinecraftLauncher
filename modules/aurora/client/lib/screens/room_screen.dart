@@ -11,6 +11,8 @@ import '../state/app_state.dart';
 import '../widgets/chat_panel.dart';
 import '../widgets/common.dart';
 import '../widgets/game_picker.dart';
+import '../widgets/invite_dialog.dart';
+import '../widgets/party_panel.dart';
 
 class RoomScreen extends StatelessWidget {
   const RoomScreen({super.key});
@@ -266,6 +268,7 @@ class _SeatsArea extends StatelessWidget {
     final talking = app.voice.talking;
 
     return ListView(padding: const EdgeInsets.all(16), children: [
+      PartyPanel(app: app),
       Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -279,7 +282,7 @@ class _SeatsArea extends StatelessWidget {
                 Text(range[0] == range[1] ? '${range[0]} 人' : '${range[0]}~${range[1]} 人',
                     style: TextStyle(color: cs.secondary)),
               ]),
-              if (app.isHost)
+              if (app.isHost && room['party'] == null)
                 OutlinedButton.icon(
                   onPressed: () => _changeGame(context),
                   icon: const Icon(Icons.swap_horiz),
@@ -316,9 +319,9 @@ class _SeatsArea extends StatelessWidget {
                 label: const Text('规则'),
               ),
               OutlinedButton.icon(
-                onPressed: () => copyText(context, inviteText(app)),
+                onPressed: () => showInviteDialog(context),
                 icon: const Icon(Icons.share, size: 18),
-                label: const Text('复制邀请'),
+                label: const Text('邀请链接 / 二维码'),
               ),
             ]),
             const SizedBox(height: 12),
