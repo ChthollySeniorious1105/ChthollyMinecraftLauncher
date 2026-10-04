@@ -9,8 +9,8 @@
 #   (Aurora also ships its browser client in web\ — served on the web port, default 7790)
 #   CML-servers-src-<ver>.zip   source of all three servers (+ shared libs, core) — buildable with `dart compile exe`
 #
-#   powershell -ExecutionPolicy Bypass -File build-servers.ps1 [-Version 0.2.5] [-SkipTests] [-SourceOnly]
-param([string]$Version = "0.2.5", [switch]$SkipTests, [switch]$SourceOnly)
+#   powershell -ExecutionPolicy Bypass -File build-servers.ps1 [-Version 0.2.6] [-SkipTests] [-SourceOnly]
+param([string]$Version = "0.2.6", [switch]$SkipTests, [switch]$SourceOnly)
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $env:PATH = (($env:PATH -replace '"','') -split ';' | Where-Object { $_ -ne '' } | Select-Object -Unique) -join ';'

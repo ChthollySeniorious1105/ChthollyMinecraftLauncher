@@ -11,7 +11,6 @@ import 'profile_screen.dart';
 import 'replay_screen.dart';
 import 'settings_screen.dart';
 import 'stats_screen.dart';
-import 'activity_screen.dart';
 import '../widgets/invite_dialog.dart';
 
 class LobbyScreen extends StatelessWidget {
@@ -483,17 +482,6 @@ class LobbyScreen extends StatelessWidget {
       body: Column(
         children: [
           InvitationBanner(app: app),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: () => _push(context, const ActivityScreen()),
-                icon: const Icon(Icons.school),
-                label: const AuroraText('每日挑战 / 新手练习'),
-              ),
-            ),
-          ),
           if (app.lastError != null)
             MaterialBanner(
               content: Text(app.lastError!),

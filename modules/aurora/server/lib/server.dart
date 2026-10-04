@@ -11,7 +11,6 @@ import 'package:crypto/crypto.dart' as hash;
 import 'replay_store.dart';
 import 'stats.dart';
 import 'party.dart';
-import 'daily.dart';
 
 export 'ai_service.dart';
 export 'env.dart';
@@ -555,7 +554,7 @@ class Room implements GameHost {
 
   void onMemberOffline(Client c) {
     _dropFromRequest(c);
-    systemChat('${c.name} 断开连接');
+    // No chat notice: flaky connections would flood the room chat. The member list shows online state.
     if (hostId == c.id) {
       final other = members.where((m) => m.online).firstOrNull;
       if (other != null) {
@@ -570,7 +569,6 @@ class Room implements GameHost {
 
   void onMemberOnline(Client c) {
     emptySince = null;
-    systemChat('${c.name} 重新连接');
     final e = engine;
     // the bot stopped covering for this seat; restart the turn clock
     if (e != null && !e.isOver) _updateClocks(e);
@@ -1352,8 +1350,6 @@ class AuroraServer {
   final String salt;
   final StatsStore stats;
   final ReplayStore replays;
-  late final DailyChallenges daily = DailyChallenges(_dataDir, salt);
-  final Directory? _dataDir;
   final String publicWebUrl;
   final String publicNativeAddress;
 
@@ -1394,8 +1390,7 @@ class AuroraServer {
       this.trustProxy = false,
       this.publicWebUrl = '',
       this.publicNativeAddress = ''})
-      : _dataDir = dataDir,
-        resources = ServerResources(resourceDir ?? Directory('words')),
+      : resources = ServerResources(resourceDir ?? Directory('words')),
         identity = identity ?? ServerIdentity.fromSeed(ServerIdentity.newSeed()),
         salt = salt ?? _randomHex(16),
         stats = StatsStore(dataDir),
@@ -1995,14 +1990,6 @@ class AuroraServer {
           c.avatar = asInt(m['avatar'], c.avatar).clamp(1, kAvatarCount);
           c.send(_welcome(c));
           c.room?.pushRoom();
-        case Msg.daily:
-          c.send(daily.snapshot(c.pid));
-        case Msg.dailyStart:
-          daily.start(c.pid, asStr(m['kind'])); c.send(daily.snapshot(c.pid));
-        case Msg.dailyAction:
-          final a = m['a'];
-          if (a is! Map<String, dynamic>) throw GameError('无效挑战操作');
-          daily.act(c.pid, c.name, c.avatar, a); c.send(daily.snapshot(c.pid));
         case Msg.listRooms:
           c.send(_roomList());
         case Msg.createRoom:

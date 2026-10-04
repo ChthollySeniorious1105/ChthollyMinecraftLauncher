@@ -108,7 +108,6 @@ class AppState extends ChangeNotifier {
   String publicWebUrl = '', publicNativeAddress = '';
   int? webPort;
   AuroraInvitation? pendingInvitation;
-  Map<String, dynamic>? dailyState;
 
   // replays / stats (filled by server replies)
   List<ReplayMeta>? replayList;
@@ -544,7 +543,6 @@ class AppState extends ChangeNotifier {
 
   Future<void> disconnect() async {
     await prefs.remove('resume:$address');
-    dailyState = null;
     _wantConnected = false;
     _reconnectTimer?.cancel();
     await voice.setMic(false);
@@ -603,8 +601,6 @@ class AppState extends ChangeNotifier {
             recentServers = recentServers.sublist(0, 8);
           prefs.setStringList('servers', recentServers);
         }
-      case Msg.dailyState:
-        dailyState = m;
       case Msg.rooms:
         rooms = [
           for (final r in (m['rooms'] as List? ?? []))

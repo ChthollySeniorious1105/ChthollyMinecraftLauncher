@@ -115,10 +115,6 @@ abstract class Msg {
   static const partyConfig = 'party_config';
   static const partyVote = 'party_vote';
   static const partyNext = 'party_next';
-  static const daily = 'daily';
-  static const dailyStart = 'daily_start';
-  static const dailyAction = 'daily_action';
-  static const dailyState = 'daily_state';
   // client -> server
   static const hello = 'hello'; // {name, avatar, token, ver}
   static const setProfile = 'set_profile'; // {name, avatar}

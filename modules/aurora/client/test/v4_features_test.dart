@@ -1,6 +1,5 @@
 import 'package:aurora_client/main.dart';
 import 'package:aurora_client/net/connection.dart';
-import 'package:aurora_client/screens/activity_screen.dart';
 import 'package:aurora_client/state/app_state.dart';
 import 'package:aurora_client/theme/themes.dart';
 import 'package:aurora_client/widgets/game_picker.dart';
@@ -38,11 +37,11 @@ void main() {
         },
       ],
       'party': {
-        'queue': ['memorypairs', 'quizparty', 'lightsout'],
+        'queue': ['memorypairs', 'wordtiles', 'lightsout'],
         'index': 0,
         'finished': false,
         'roundComplete': true,
-        'votes': {'1': 'quizparty'},
+        'votes': {'1': 'wordtiles'},
         'scores': [
           {'name': '甲', 'points': 100, 'wins': 1},
         ],
@@ -90,7 +89,6 @@ void main() {
     tester,
   ) async {
     for (final size in sizes) {
-      await pump(tester, const ActivityScreen(), size);
       await pump(
         tester,
         Scaffold(
@@ -107,60 +105,7 @@ void main() {
         ),
         size,
       );
-      for (final kind in dailyKinds.keys) {
-        app.dailyState = {
-          'day': '2026-10-04',
-          'active': DailyPuzzle(kind, 7).view(),
-          'boards': {},
-          'mine': [],
-        };
-        await pump(tester, DailyScreen(key: ValueKey('$kind$size')), size);
-      }
     }
-    await tester.pumpWidget(const SizedBox());
-    tester.view.resetPhysicalSize();
-    tester.view.resetDevicePixelRatio();
-  });
-  testWidgets(
-    'guided lessons run real engine actions and reach free practice',
-    (tester) async {
-      for (final id in [
-        'tictactoe',
-        'connect4',
-        'gomoku',
-        'memorypairs',
-        'lightsout',
-        'quizparty',
-      ]) {
-        await pump(
-          tester,
-          TutorialScreen(key: ValueKey(id), game: id),
-          const Size(390, 800),
-        );
-        for (var i = 0; i < 5; i++) {
-          final demo = find.text('演示这一步');
-          await tester.tap(demo);
-          await tester.pump();
-          expect(tester.takeException(), isNull, reason: '$id step $i');
-        }
-      }
-      await tester.pumpWidget(const SizedBox());
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    },
-  );
-  testWidgets('the complete Lights Out board fits inside the CML panel', (
-    tester,
-  ) async {
-    await pump(
-      tester,
-      const TutorialScreen(game: 'lightsout'),
-      const Size(760, 640),
-    );
-    final grid = find.byType(GridView);
-    expect(grid, findsOneWidget);
-    expect(tester.getBottomRight(grid).dy, lessThanOrEqualTo(640));
-    expect(tester.getSize(grid).width, greaterThanOrEqualTo(172));
     await tester.pumpWidget(const SizedBox());
     tester.view.resetPhysicalSize();
     tester.view.resetDevicePixelRatio();

@@ -10,7 +10,6 @@ import 'local_game_screen.dart';
 import 'profile_screen.dart';
 import 'replay_screen.dart';
 import 'settings_screen.dart';
-import 'activity_screen.dart';
 
 /// Server address entry ("IP:端口").
 class ConnectScreen extends StatefulWidget {
@@ -94,14 +93,6 @@ class _ConnectScreenState extends State<ConnectScreen> {
                       letterSpacing: 6,
                       color: cs.onSurface.withValues(alpha: 0.8),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ActivityScreen()),
-                    ),
-                    icon: const Icon(Icons.school),
-                    label: const AuroraText('离线新手练习'),
                   ),
                   const SizedBox(height: 28),
                   Card(

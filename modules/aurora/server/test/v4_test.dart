@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:aurora_server/server.dart';
-import 'package:aurora_server/daily.dart';
 import 'package:aurora_server/party.dart';
 import 'package:aurora_shared/aurora_shared.dart';
-import 'package:aurora_shared/games/party4/games.dart';
 import 'package:test/test.dart';
 import 'server_test.dart' show TClient;
 
@@ -61,7 +59,7 @@ void main() {
   test(
     'party votes choose only compatible games and scores survive transitions',
     () {
-      final p = PartyNight(['quizparty', 'memorypairs', 'lightsout']);
+      final p = PartyNight(['wordtiles', 'memorypairs', 'lightsout']);
       expect(() => p.vote(1, 'memorypairs'), throwsA(isA<GameError>()));
       p.record(
         [
@@ -87,31 +85,11 @@ void main() {
       p.advance('memorypairs');
       p.record([], null);
       expect(p.finished, isTrue);
-      expect(() => p.advance('quizparty'), throwsA(isA<GameError>()));
+      expect(() => p.advance('wordtiles'), throwsA(isA<GameError>()));
     },
   );
-  test('daily server validates moves, keeps best and persists leaderboard', () {
-    final dir = Directory.systemTemp.createTempSync('aurora_daily_v4_');
-    addTearDown(() => dir.deleteSync(recursive: true));
-    final d = DailyChallenges(dir, 'test-salt');
-    d.start('a', 'lights');
-    d.start('b', 'lights');
-    expect(d.active['a']!.view(), d.active['b']!.view());
-    final p = d.active['a']!;
-    expect(
-      () => d.act('a', '甲', 1, {'cell': 999, 'revision': 0}),
-      throwsA(isA<GameError>()),
-    );
-    for (final cell in LightsOut.solve(p.board, 4)) {
-      d.act('a', '甲', 1, {'cell': cell, 'revision': p.moves});
-    }
-    expect(p.won, isTrue);
-    final saved = DailyChallenges(dir, 'test-salt');
-    expect((saved.snapshot('a')['mine'] as List).single['score'], p.score);
-    expect(d.snapshot('b')['active'].toString(), isNot(contains('solution')));
-  });
   test(
-    'TCP and WebSocket share party, daily challenge, invite metadata and reconnect',
+    'TCP and WebSocket share party, invite metadata and reconnect',
     () async {
       final dir = Directory.systemTemp.createTempSync('aurora_v4_');
       final server = AuroraServer(
@@ -157,12 +135,12 @@ void main() {
       native.clear();
       web.send({
         't': Msg.partyConfig,
-        'queue': ['memorypairs', 'quizparty'],
+        'queue': ['memorypairs', 'wordtiles'],
       });
       expect((await web.wait(Msg.error))['msg'], isNotEmpty);
       native.send({
         't': Msg.partyConfig,
-        'queue': ['memorypairs', 'quizparty'],
+        'queue': ['memorypairs', 'wordtiles'],
       });
       await native.wait(
         (m) => m['t'] == Msg.room && m['room']?['party'] != null,
@@ -198,19 +176,16 @@ void main() {
         }
       }
       expect(room.party!.roundComplete, isTrue);
-      web.send({'t': Msg.partyVote, 'game': 'quizparty'});
+      web.send({'t': Msg.partyVote, 'game': 'wordtiles'});
       await web.wait(
         Msg.room,
         (m) => (m['room']?['party']?['votes'] as Map?)?.isNotEmpty == true,
       );
       native.send({'t': Msg.partyNext});
       await native.wait(
-        (m) => m['t'] == Msg.room && m['room']?['game'] == 'quizparty',
+        (m) => m['t'] == Msg.room && m['room']?['game'] == 'wordtiles',
       );
       expect(room.party!.scores, isNotEmpty);
-      web.send({'t': Msg.dailyStart, 'kind': 'lights'});
-      final daily = await web.wait(Msg.dailyState);
-      expect(daily['active']['kind'], 'lights');
       // Server-issued token also survives browser reload / a new network connection.
       await web.ws.close();
       final resumed = WebPeer();

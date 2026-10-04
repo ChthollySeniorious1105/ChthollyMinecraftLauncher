@@ -3,7 +3,6 @@ Map<String, dynamic> gameTraits(String id, String category) {
   const short = {
     'tictactoe',
     'connect4',
-    'quizparty',
     'memorypairs',
     'lightsout',
     'wordtiles',
@@ -27,13 +26,7 @@ Map<String, dynamic> gameTraits(String id, String category) {
     'guandan',
     'shengji',
   };
-  const coop = {
-    'escapehouse',
-    'hanabi',
-    'justone',
-    'themind',
-    'codenames_duet',
-  };
+  const coop = {'hanabi', 'justone', 'themind', 'codenames_duet'};
   final minutes = short.contains(id)
       ? 5
       : long.contains(id) || category == '麻将'
@@ -43,7 +36,7 @@ Map<String, dynamic> gameTraits(String id, String category) {
     'minutes': minutes,
     'difficulty': long.contains(id) || category == '麻将'
         ? 3
-        : short.contains(id) || id == 'escapehouse'
+        : short.contains(id)
         ? 1
         : 2,
     'mode': coop.contains(id) ? 'coop' : 'competitive',

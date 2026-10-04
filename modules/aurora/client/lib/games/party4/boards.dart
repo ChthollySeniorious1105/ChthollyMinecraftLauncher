@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/common.dart';
 
 final Map<String, BoardBuilder> party4Boards = {
-  'quizparty': (g) => QuizBoard(g),
   'memorypairs': (g) => MemoryBoard(g),
-  'escapehouse': (g) => EscapeBoard(g),
   'lightsout': (g) => LightsBoard(g),
   'wordtiles': (g) => WordBoard(g),
 };
@@ -71,61 +69,6 @@ Widget nextRound(GameContext g) => FilledButton.icon(
         : '等待其他玩家',
   ),
 );
-
-class QuizBoard extends StatelessWidget {
-  final GameContext g;
-  const QuizBoard(this.g, {super.key});
-  @override
-  Widget build(BuildContext context) {
-    final v = g.view, choices = v['choices'] as List;
-    final reveal = v['reveal'] == true || g.over;
-    return PartyBoardPage(
-      title:
-          '知识派对 · 第 ${min(v['round'] as int, v['rounds'] as int)}/${v['rounds']} 题',
-      subtitle: g.over
-          ? '本场结束，按正确率计分'
-          : reveal
-          ? '${v['explanation']}'
-          : '45 秒内选择答案，提交后统一揭晓。已提交 ${(v['submitted'] as List).length}/${g.players}',
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text(
-              '${v['question']}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-        ),
-        for (var i = 0; i < choices.length; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 54),
-                alignment: Alignment.centerLeft,
-              ),
-              onPressed: v['canAct'] == true && !reveal
-                  ? () => g.act({'answer': i})
-                  : null,
-              icon: Icon(
-                reveal && v['answer'] == i
-                    ? Icons.check_circle
-                    : v['mine'] == i
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-              ),
-              label: Text(
-                '${String.fromCharCode(65 + i)}. ${choices[i]}${reveal && v['answer'] == i ? ' ✓ 正确答案' : ''}',
-              ),
-            ),
-          ),
-        const SizedBox(height: 12),
-        if (reveal) ...[scoreList(g), const SizedBox(height: 12), nextRound(g)],
-      ],
-    );
-  }
-}
 
 const pairSymbols = [
   '日',
@@ -268,86 +211,6 @@ class LightsBoard extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class EscapeBoard extends StatelessWidget {
-  final GameContext g;
-  const EscapeBoard(this.g, {super.key});
-  @override
-  Widget build(BuildContext context) {
-    final v = g.view,
-        clues = v['clues'] as List,
-        inspected = v['inspected'] as List;
-    final cs = Theme.of(context).colorScheme;
-    return PartyBoardPage(
-      title: '极光密室 · ${v['title']}',
-      subtitle: g.over
-          ? (v['won'] == true ? '全员成功逃出密室！' : '错误达到上限，挑战失败。')
-          : '第 ${v['stage']}/${v['rooms']} 间 · 全员共享线索 · 错误 ${v['mistakes']}/6',
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [cs.primaryContainer, cs.tertiaryContainer],
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            children: [
-              Icon(Icons.nightlight_round, size: 64, color: cs.primary),
-              const SizedBox(height: 8),
-              const Text('一道锁住的门。墙上的星图、桌上的笔记与角落的锁盒，似乎藏着出口。'),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    FilledButton.tonalIcon(
-                      onPressed:
-                          !g.spectator && !g.over && !inspected.contains(i)
-                          ? () => g.act({'type': 'inspect', 'item': i})
-                          : null,
-                      icon: Icon([Icons.stars, Icons.menu_book, Icons.lock][i]),
-                      label: Text(['调查壁画', '打开笔记', '检查锁盒'][i]),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        for (var i = 0; i < clues.length; i++)
-          Card(
-            child: ListTile(
-              leading: Icon(
-                inspected.contains(i) ? Icons.check_circle : Icons.help_outline,
-              ),
-              title: Text('${clues[i]}'),
-            ),
-          ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 8,
-          children: [
-            for (var i = 0; i < (v['choices'] as List).length; i++)
-              FilledButton(
-                onPressed: !g.spectator && !g.over
-                    ? () => g.act({'type': 'solve', 'choice': i})
-                    : null,
-                child: Text('密码 ${(v['choices'] as List)[i]}'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          '共享背包：${(v['inventory'] as List).isEmpty ? '暂无线索钥匙' : (v['inventory'] as List).join('、')}',
-        ),
-      ],
     );
   }
 }
