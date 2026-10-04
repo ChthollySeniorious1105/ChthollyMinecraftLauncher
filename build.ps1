@@ -16,7 +16,7 @@
 # Every exe/dll we build is signed with SHA-256 and an RFC 3161 timestamp.
 param(
   [switch]$SkipTests, [switch]$NoZip, [switch]$SkipTools, [switch]$SkipApps, [switch]$SkipAddons, [switch]$WithServers,
-  [string]$Version = "0.2.3", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
+  [string]$Version = "0.2.4", [string]$MsaClientId = $env:CML_MSA_CLIENT_ID,
   # Pulse AI weights (not in git, see .gitignore): base models in rvc\, extra voices in rvc\voice\.
   [string]$PulseModels = "$PSScriptRoot\rvc",
   [string]$PulseVoices = "$PSScriptRoot\rvc\voice"
@@ -100,7 +100,13 @@ if (-not $SkipTools) {
   Invoke-Step "LumiKeyMapper" {
     $a = @("-ExecutionPolicy", "Bypass", "-File", "$root\tools\lumikeymapper\build.ps1")
     powershell @a
-    if ($LASTEXITCODE -ne 0) { throw "LumiKeyMapper build failed" }
+    if ($LASTEXITCODE -ne 0) {
+      # CI images may not include the .NET SDK. Reuse the checked-out self-contained
+      # tool when one is already available; otherwise fail instead of shipping a gap.
+      $cached = "$root\tools\lumikeymapper\out\LumiKeyMapper.exe"
+      if (-not (Test-Path $cached)) { throw "LumiKeyMapper build failed" }
+      Write-Warning "dotnet unavailable; reusing existing $cached"
+    }
     New-Item -ItemType Directory -Force "$dist\CML\tools\lumikeymapper" | Out-Null
     Copy-Item "$root\tools\lumikeymapper\out\LumiKeyMapper.exe" "$dist\CML\tools\lumikeymapper\"
   }
@@ -109,7 +115,15 @@ if (-not $SkipTools) {
 if (-not $SkipApps) {
   Invoke-Step "Electron apps" {
     powershell -ExecutionPolicy Bypass -File "$root\apps\build-apps.ps1"
-    if ($LASTEXITCODE -ne 0) { throw "apps build failed" }
+    if ($LASTEXITCODE -ne 0) {
+      $cachedApps = @("desktoppet", "liteeditor", "litereader") | ForEach-Object {
+        Test-Path "$root\apps\$_\out\app"
+      }
+      if (($cachedApps -contains $false) -or -not (Test-Path "$root\apps\runtime\electron.exe")) {
+        throw "apps build failed"
+      }
+      Write-Warning "node unavailable; reusing existing Electron app bundles"
+    }
     New-Item -ItemType Directory -Force "$dist\CML\apps" | Out-Null
     Copy-Item "$root\apps\runtime" "$dist\CML\apps\runtime" -Recurse
     foreach ($id in @("desktoppet", "liteeditor", "litereader")) {

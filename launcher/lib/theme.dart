@@ -237,8 +237,8 @@ ThemeData buildTheme(CmlTheme t, {required bool dark, Color? accent}) {
   final base = ThemeData(
     colorScheme: scheme,
     useMaterial3: true,
-    fontFamily: 'Microsoft YaHei UI',
-    fontFamilyFallback: const ['Microsoft YaHei', 'Segoe UI', 'PingFang SC'],
+    fontFamily: 'ClaudeSansStd',
+    fontFamilyFallback: const ['Microsoft YaHei UI', 'Microsoft YaHei', 'Segoe UI', 'PingFang SC'],
     visualDensity: VisualDensity.standard,
     splashFactory: InkSparkle.splashFactory,
   );

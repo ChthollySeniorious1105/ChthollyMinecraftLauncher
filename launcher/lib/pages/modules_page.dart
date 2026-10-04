@@ -22,7 +22,7 @@ class AuroraPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pal = CmlPalette.of(context);
-    return _ModuleFrame(child: AuroraEmbed(theme: ModuleThemes.aurora(pal)));
+    return _ModuleFrame(child: AuroraEmbed(theme: ModuleThemes.aurora(pal), language: I18n.of(context).code));
   }
 }
 

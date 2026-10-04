@@ -98,6 +98,7 @@ class PlayerTag extends StatelessWidget {
 
 /// Font fallback for text drawn by CustomPainters (they don't inherit the theme).
 const List<String> kFontFallback = [
+  'ClaudeSansStd',
   'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', 'Segoe UI Symbol', 'Segoe UI Emoji',
   'Apple Color Emoji', 'Noto Color Emoji',
 ];

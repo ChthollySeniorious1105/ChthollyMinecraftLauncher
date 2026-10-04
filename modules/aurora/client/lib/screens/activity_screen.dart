@@ -1,3 +1,5 @@
+import '../i18n/aurora_i18n.dart';
+
 import 'dart:math';
 
 import 'package:aurora_shared/aurora_shared.dart';
@@ -15,15 +17,15 @@ class ActivityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('挑战与新手练习')),
+      appBar: AppBar(title: const AuroraText('挑战与新手练习')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
             child: ListTile(
               leading: const Icon(Icons.today),
-              title: const Text('每日挑战'),
-              subtitle: const Text('每日数独、扫雷、2048 与熄灯 · 同服同题 · 个人最好成绩'),
+              title: const AuroraText('每日挑战'),
+              subtitle: const AuroraText('每日数独、扫雷、2048 与熄灯 · 同服同题 · 个人最好成绩'),
               trailing: const Icon(Icons.chevron_right),
               onTap: app.state == ConnState.connected
                   ? () => Navigator.push(
@@ -36,11 +38,11 @@ class ActivityScreen extends StatelessWidget {
           if (app.state != ConnState.connected)
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Text('连接服务器后可参加每日挑战；下方新手练习可以离线使用。'),
+              child: AuroraText('连接服务器后可参加每日挑战；下方新手练习可以离线使用。'),
             ),
           const SizedBox(height: 12),
           Text('互动新手练习', style: Theme.of(context).textTheme.titleLarge),
-          const Text('用真实棋盘完成指定操作，再自由练习。练习不会计入联机排名。'),
+          const AuroraText('用真实棋盘完成指定操作，再自由练习。练习不会计入联机排名。'),
           for (final id in const [
             'tictactoe',
             'connect4',
@@ -52,8 +54,8 @@ class ActivityScreen extends StatelessWidget {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.school),
-                title: Text(findGame(id)!.name),
-                subtitle: const Text('分步提示 · 合法操作 · 可反复练习'),
+                title: Text(auroraGameText(findGame(id)!.name)),
+                subtitle: const AuroraText('分步提示 · 合法操作 · 可反复练习'),
                 trailing: const Icon(Icons.play_arrow),
                 onTap: () => Navigator.push(
                   context,
@@ -101,11 +103,11 @@ class _DailyScreenState extends State<DailyScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('每日挑战'),
+        title: const AuroraText('每日挑战'),
         actions: [
           IconButton(
             onPressed: online ? () => app.send({'t': Msg.daily}) : null,
-            tooltip: '刷新成绩',
+            tooltip: auroraT('刷新成绩'),
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -134,7 +136,7 @@ class _DailyScreenState extends State<DailyScreen> {
           if (!online)
             const Padding(
               padding: EdgeInsets.all(12),
-              child: Text('连接已断开，恢复后可继续。'),
+              child: AuroraText('连接已断开，恢复后可继续。'),
             ),
           if (p != null) ...[
             const SizedBox(height: 16),
@@ -156,14 +158,14 @@ class _DailyScreenState extends State<DailyScreen> {
             if (kind == 'mines')
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('标记模式（点击插旗 / 取消）'),
+                title: const AuroraText('标记模式（点击插旗 / 取消）'),
                 value: flag,
                 onChanged: (v) => setState(() => flag = v),
               ),
             if (kind == 'sudoku')
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text('先点空格，再点数字；填对的格子会锁定。'),
+                child: AuroraText('先点空格，再点数字；填对的格子会锁定。'),
               ),
             Center(
               child: ConstrainedBox(
@@ -186,7 +188,7 @@ class _DailyScreenState extends State<DailyScreen> {
                       onPressed: cell >= 0 && p['done'] != true && online
                           ? () => act({'cell': cell, 'digit': d})
                           : null,
-                      child: Text('$d'),
+                      child: AuroraText('$d'),
                     ),
                 ],
               ),
@@ -211,7 +213,7 @@ class _DailyScreenState extends State<DailyScreen> {
                 ],
               ),
             const SizedBox(height: 16),
-            const Text('今日排行榜（得分相同则步数更少者优先）'),
+            const AuroraText('今日排行榜（得分相同则步数更少者优先）'),
             for (final row in ((data?['boards'] as Map?)?[kind] as List? ?? []))
               ListTile(
                 dense: true,
@@ -227,7 +229,7 @@ class _DailyScreenState extends State<DailyScreen> {
           if (p == null && data != null)
             const Padding(
               padding: EdgeInsets.all(24),
-              child: Text('选择一项挑战开始。所有设备使用相同规则与题目。'),
+              child: AuroraText('选择一项挑战开始。所有设备使用相同规则与题目。'),
             ),
         ],
       ),
@@ -431,11 +433,11 @@ class _TutorialScreenState extends State<TutorialScreen> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text('新手练习 · ${def.name}'),
+        title: Text('${auroraT('新手练习')} · ${auroraGameText(def.name)}'),
         actions: [
           IconButton(
             onPressed: () => setState(_restart),
-            tooltip: '重新开始',
+            tooltip: auroraT('重新开始'),
             icon: const Icon(Icons.restart_alt),
           ),
         ],
@@ -449,7 +451,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('第 ${min(steps + 1, 5)}/5 步 · $hint'),
+                  AuroraText('第 ${min(steps + 1, 5)}/5 步 · $hint'),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -458,13 +460,13 @@ class _TutorialScreenState extends State<TutorialScreen> {
                       if (guided)
                         TextButton(
                           onPressed: () => setState(() => guided = false),
-                          child: const Text('自由练习'),
+                          child: const AuroraText('自由练习'),
                         ),
                       TextButton(
                         onPressed: suggested == null
                             ? null
                             : () => _act(Map.of(suggested!)),
-                        child: const Text('演示这一步'),
+                        child: const AuroraText('演示这一步'),
                       ),
                     ],
                   ),

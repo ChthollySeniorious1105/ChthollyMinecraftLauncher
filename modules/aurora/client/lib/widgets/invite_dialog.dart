@@ -1,3 +1,5 @@
+import '../i18n/aurora_i18n.dart';
+
 import 'package:aurora_shared/aurora_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -31,7 +33,7 @@ class _InviteDialogState extends State<InviteDialog> {
   Widget build(BuildContext context) {
     final link = roomInvitation(widget.app, url.text);
     return AlertDialog(
-      title: const Text('邀请好友 · 扫码加入'),
+      title: const AuroraText('邀请好友 · 扫码加入'),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -41,9 +43,9 @@ class _InviteDialogState extends State<InviteDialog> {
               TextField(
                 controller: url,
                 keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: '好友可访问的网页版地址',
-                  hintText: 'https://play.example.com',
+                decoration: InputDecoration(
+                  labelText: auroraT('好友可访问的网页版地址'),
+                  hintText: auroraT('https://play.example.com'),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -63,7 +65,7 @@ class _InviteDialogState extends State<InviteDialog> {
                 const SizedBox(height: 12),
                 SelectableText(link),
               ] else
-                const Text('请填写有效的 http 或 https 地址'),
+                const AuroraText('请填写有效的 http 或 https 地址'),
             ],
           ),
         ),
@@ -71,7 +73,7 @@ class _InviteDialogState extends State<InviteDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('关闭'),
+          child: const AuroraText('关闭'),
         ),
         FilledButton(
           onPressed: link == null
@@ -83,7 +85,7 @@ class _InviteDialogState extends State<InviteDialog> {
                   );
                   copyText(context, '来 Aurora 一起玩！\n$link');
                 },
-          child: const Text('复制邀请链接'),
+          child: const AuroraText('复制邀请链接'),
         ),
       ],
     );
@@ -99,8 +101,8 @@ class InvitationBanner extends StatelessWidget {
     if (code == null) return const SizedBox.shrink();
     return Card(
       child: ListTile(
-        title: Text('邀请房间：$code'),
-        subtitle: const Text('已连接服务器，点击加入邀请房间'),
+        title: AuroraText('邀请房间：$code'),
+        subtitle: const AuroraText('已连接服务器，点击加入邀请房间'),
         trailing: FilledButton(
           onPressed: () async {
             final pwd = TextEditingController();
@@ -108,20 +110,22 @@ class InvitationBanner extends StatelessWidget {
               useRootNavigator: false,
               context: context,
               builder: (c) => AlertDialog(
-                title: Text('加入房间 $code'),
+                title: AuroraText('加入房间 $code'),
                 content: TextField(
                   controller: pwd,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: '房间密码（没有则留空）'),
+                  decoration: InputDecoration(
+                    labelText: auroraT('房间密码（没有则留空）'),
+                  ),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(c, false),
-                    child: const Text('取消'),
+                    child: const AuroraText('取消'),
                   ),
                   FilledButton(
                     onPressed: () => Navigator.pop(c, true),
-                    child: const Text('加入'),
+                    child: const AuroraText('加入'),
                   ),
                 ],
               ),
@@ -133,7 +137,7 @@ class InvitationBanner extends StatelessWidget {
               app.send({'t': Msg.joinRoom, 'room': code, 'password': password});
             }
           },
-          child: const Text('加入'),
+          child: const AuroraText('加入'),
         ),
       ),
     );

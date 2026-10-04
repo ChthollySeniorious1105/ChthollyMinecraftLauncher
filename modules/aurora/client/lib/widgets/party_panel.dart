@@ -1,3 +1,5 @@
+import '../i18n/aurora_i18n.dart';
+
 import 'package:aurora_shared/aurora_shared.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +16,7 @@ class PartyPanel extends StatelessWidget {
           ? OutlinedButton.icon(
               onPressed: () => _configure(context),
               icon: const Icon(Icons.celebration),
-              label: const Text('创建派对之夜'),
+              label: const AuroraText('创建派对之夜'),
             )
           : const SizedBox.shrink();
     }
@@ -56,7 +58,7 @@ class PartyPanel extends StatelessWidget {
               ),
             if (complete && !finished) ...[
               const Divider(),
-              const Text('投票选择下一款游戏（同票按队列顺序）'),
+              const AuroraText('投票选择下一款游戏（同票按队列顺序）'),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -76,7 +78,7 @@ class PartyPanel extends StatelessWidget {
               if (app.isHost)
                 FilledButton(
                   onPressed: () => app.send({'t': Msg.partyNext}),
-                  child: const Text('按投票进入下一局'),
+                  child: const AuroraText('按投票进入下一局'),
                 ),
             ],
             if (app.isHost && app.room?['playing'] != true)
@@ -86,23 +88,23 @@ class PartyPanel extends StatelessWidget {
                     useRootNavigator: false,
                     context: context,
                     builder: (c) => AlertDialog(
-                      title: const Text('结束当前派对？'),
-                      content: const Text('本次派对累计积分将清空。'),
+                      title: const AuroraText('结束当前派对？'),
+                      content: const AuroraText('本次派对累计积分将清空。'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(c, false),
-                          child: const Text('取消'),
+                          child: const AuroraText('取消'),
                         ),
                         FilledButton(
                           onPressed: () => Navigator.pop(c, true),
-                          child: const Text('结束'),
+                          child: const AuroraText('结束'),
                         ),
                       ],
                     ),
                   );
                   if (ok == true) app.send({'t': Msg.partyConfig, 'queue': []});
                 },
-                child: const Text('结束派对'),
+                child: const AuroraText('结束派对'),
               ),
           ],
         ),
@@ -123,7 +125,7 @@ class PartyPanel extends StatelessWidget {
       context: context,
       builder: (c) => StatefulBuilder(
         builder: (c, set) => AlertDialog(
-          title: const Text('派对之夜'),
+          title: const AuroraText('派对之夜'),
           content: SizedBox(
             width: 520,
             height: 420,
@@ -160,7 +162,7 @@ class PartyPanel extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(c),
-              child: const Text('取消'),
+              child: const AuroraText('取消'),
             ),
             FilledButton(
               onPressed: selected.length < 2
@@ -172,7 +174,7 @@ class PartyPanel extends StatelessWidget {
                       });
                       Navigator.pop(c);
                     },
-              child: const Text('创建派对'),
+              child: const AuroraText('创建派对'),
             ),
           ],
         ),

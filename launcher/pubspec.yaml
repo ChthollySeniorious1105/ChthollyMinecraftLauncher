@@ -34,6 +34,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo.png
+  fonts:
+    - family: ClaudeSansStd
+      fonts:
+        - asset: assets/fonts/ClaudeSansStd.OTF
 
 # Aurora voice uses raw PCM only; Xiph prebuilts come from GitHub (often unreachable).
 hooks:

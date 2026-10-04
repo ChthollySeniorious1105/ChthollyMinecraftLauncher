@@ -1,3 +1,4 @@
+import '../i18n/aurora_i18n.dart';
 import 'dart:math';
 import 'package:aurora_shared/aurora_shared.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,10 @@ class _GamePickerGridState extends State<GamePickerGrid> {
     return p[0] == p[1] ? '${p[0]}人' : '${p[0]}-${p[1]}人';
   }
 
+  static String _name(Map<String, dynamic> g) => auroraGameText('${g['name']}');
+  static String _description(Map<String, dynamic> g) => auroraEnglish['${g['description']}'] ?? '${g['description']}';
+  static String _category(String value) => auroraCategory(value);
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -55,9 +60,9 @@ class _GamePickerGridState extends State<GamePickerGrid> {
       if (_cat != null && g['category'] != _cat) continue;
       if (!matchesGame(g, players: _playersFilter, minutes: _minutes, difficulty: _difficulty, mode: _mode)) continue;
       if (q.isNotEmpty &&
-          !'${g['name']}'.toLowerCase().contains(q) &&
+          !_name(g).toLowerCase().contains(q) &&
           !'${g['id']}'.contains(q) &&
-          !'${g['description']}'.toLowerCase().contains(q)) {
+          !_description(g).toLowerCase().contains(q)) {
         continue;
       }
       cats['${g['category']}']!.add(g);
@@ -97,18 +102,18 @@ class _GamePickerGridState extends State<GamePickerGrid> {
         _filter<int>('时长', _minutes, {0: '不限', 5: '约 5 分钟', 15: '约 15 分钟', 30: '30 分钟内', 60: '约 1 小时'}, (v) => _minutes = v),
         _filter<int>('难度', _difficulty, {0: '不限', 1: '入门', 2: '中等及以下', 3: '含进阶'}, (v) => _difficulty = v),
         _filter<String>('玩法', _mode, {'': '不限', 'coop': '合作', 'competitive': '对战'}, (v) => _mode = v),
-        TextButton.icon(onPressed: shown.isEmpty ? null : () { final choices = shown.expand((e) => e.value).toList(); widget.onPick('${choices[Random().nextInt(choices.length)]['id']}'); }, icon: const Icon(Icons.shuffle, size: 18), label: const Text('帮我选')),
+        TextButton.icon(onPressed: shown.isEmpty ? null : () { final choices = shown.expand((e) => e.value).toList(); widget.onPick('${choices[Random().nextInt(choices.length)]['id']}'); }, icon: const Icon(Icons.shuffle, size: 18), label: const AuroraText('帮我选')),
       ])),
       Row(children: [
         Expanded(
           child: TextField(
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: '搜索游戏（名称/简介）'),
+            decoration: InputDecoration(prefixIcon: Icon(Icons.search), hintText: auroraT('搜索游戏（名称/简介）')),
             onChanged: (v) => setState(() => _q = v),
           ),
         ),
         if (app != null && sel != null)
           IconButton(
-            tooltip: app.isFavorite(sel) ? '取消收藏当前游戏' : '收藏当前游戏（也可长按游戏）',
+            tooltip: auroraT(app.isFavorite(sel) ? '取消收藏当前游戏' : '收藏当前游戏（也可长按游戏）'),
             onPressed: () => setState(() => app.toggleFavorite(sel)),
             icon: Icon(app.isFavorite(sel) ? Icons.star : Icons.star_border, color: app.isFavorite(sel) ? Colors.amber : null),
           ),
@@ -119,14 +124,14 @@ class _GamePickerGridState extends State<GamePickerGrid> {
         child: ListView(scrollDirection: Axis.horizontal, children: [
           Padding(
             padding: const EdgeInsets.only(right: 6),
-            child: ChoiceChip(label: Text('全部 ${widget.games.length}'), selected: _cat == null, onSelected: (_) => setState(() => _cat = null)),
+            child: ChoiceChip(label: AuroraText('全部 ${widget.games.length}'), selected: _cat == null, onSelected: (_) => setState(() => _cat = null)),
           ),
           for (final c in cats.keys)
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: ChoiceChip(
                 avatar: Icon(GamePickerGrid.categoryIcons[c] ?? Icons.games, size: 16),
-                label: Text(c),
+                label: Text(_category(c)),
                 selected: _cat == c,
                 onSelected: (_) => setState(() => _cat = _cat == c ? null : c),
               ),
@@ -135,7 +140,7 @@ class _GamePickerGridState extends State<GamePickerGrid> {
       ),
       Expanded(
         child: shown.isEmpty
-            ? const Center(child: Text('没有匹配的游戏'))
+            ? const Center(child: AuroraText('没有匹配的游戏'))
             : ListView(children: [
                 if (favs.isNotEmpty) section(Icons.star, '收藏', favs),
                 if (recents.isNotEmpty) section(Icons.history, '最近玩过', recents),
@@ -145,7 +150,7 @@ class _GamePickerGridState extends State<GamePickerGrid> {
                     child: Row(children: [
                       Icon(GamePickerGrid.categoryIcons[e.key] ?? Icons.games, size: 18, color: cs.primary),
                       const SizedBox(width: 6),
-                      Text('${e.key}（${e.value.length}）', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
+                      Text('${_category(e.key)} (${e.value.length})', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
                     ]),
                   ),
                   Wrap(spacing: 8, runSpacing: 8, children: [
@@ -159,8 +164,8 @@ class _GamePickerGridState extends State<GamePickerGrid> {
 
   Widget _filter<T>(String label, T value, Map<T, String> choices, void Function(T) changed) => Padding(
     padding: const EdgeInsets.only(right: 8), child: PopupMenuButton<T>(initialValue: value,
-      onSelected: (v) => setState(() => changed(v)), itemBuilder: (_) => [for (final e in choices.entries) PopupMenuItem(value: e.key, child: Text(e.value))],
-      child: Chip(label: Text('$label：${choices[value]}'), avatar: const Icon(Icons.filter_list, size: 16))));
+      onSelected: (v) => setState(() => changed(v)), itemBuilder: (_) => [for (final e in choices.entries) PopupMenuItem(value: e.key, child: Text(auroraT(e.value)))],
+      child: Chip(label: AuroraText('${auroraT(label)}：${auroraT(choices[value]!)}'), avatar: const Icon(Icons.filter_list, size: 16))));
 
   Widget _chip(BuildContext context, Map<String, dynamic> g, AppState? app) {
     final cs = Theme.of(context).colorScheme;
@@ -172,7 +177,7 @@ class _GamePickerGridState extends State<GamePickerGrid> {
     }
 
     return Tooltip(
-      message: '${g['description']}${app == null ? '' : '\n（长按 / 右键：${fav ? '取消收藏' : '收藏'}）'}',
+      message: '${_description(g)}${app == null ? '' : '\n${auroraT('（长按 / 右键：{0}）', [auroraT(fav ? '取消收藏' : '收藏')])}'}',
       waitDuration: const Duration(milliseconds: 400),
       child: GestureDetector(
         onLongPress: toggle,
@@ -180,7 +185,7 @@ class _GamePickerGridState extends State<GamePickerGrid> {
         child: ChoiceChip(
           avatar: fav ? const Icon(Icons.star, size: 14, color: Colors.amber) : null,
           label: Text.rich(TextSpan(children: [
-            TextSpan(text: '${g['name']}'),
+            TextSpan(text: _name(g)),
             if (_players(g).isNotEmpty)
               TextSpan(text: ' ${_players(g)}', style: TextStyle(fontSize: 11, color: cs.onSurface.withValues(alpha: 0.6))),
           ])),
@@ -202,7 +207,7 @@ class GameOptionsForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final opts = (game['options'] as List? ?? []).cast<Map>();
-    if (opts.isEmpty) return const Text('该游戏没有可调整的选项');
+    if (opts.isEmpty) return const AuroraText('该游戏没有可调整的选项');
     return Wrap(spacing: 12, runSpacing: 10, children: [
       for (final o in opts)
         SizedBox(
@@ -210,10 +215,10 @@ class GameOptionsForm extends StatelessWidget {
           child: DropdownButtonFormField<Object>(
             initialValue: values[o['key']] ?? o['default'],
             isExpanded: true,
-            decoration: InputDecoration(labelText: '${o['label']}'),
+            decoration: InputDecoration(labelText: auroraT('${o['label']}')),
             items: [
               for (final c in (o['choices'] as List).cast<Map>())
-                DropdownMenuItem(value: c['value'] as Object, child: Text('${c['label']}', overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem(value: c['value'] as Object, child: Text(auroraT('${c['label']}'), overflow: TextOverflow.ellipsis)),
             ],
             onChanged: onChanged == null ? null : (v) => onChanged!('${o['key']}', v!),
           ),
@@ -241,24 +246,24 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
     final g = widget.app.gameInfo(_game) ?? widget.app.games.first;
     _game = '${g['id']}';
     return AlertDialog(
-      title: const Text('创建房间'),
+      title: const AuroraText('创建房间'),
       content: SizedBox(
         width: 640,
         height: 520,
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Row(children: [
-            Expanded(child: TextField(controller: _name, decoration: const InputDecoration(labelText: '房间名'))),
+            Expanded(child: TextField(controller: _name, decoration: InputDecoration(labelText: auroraT('房间名')))),
             const SizedBox(width: 12),
             SizedBox(
                 width: 160,
-                child: TextField(controller: _pwd, decoration: const InputDecoration(labelText: '密码（可选）'))),
+                child: TextField(controller: _pwd, decoration: InputDecoration(labelText: auroraT('密码（可选）')))),
           ]),
           const SizedBox(height: 8),
           Row(children: [
             SegmentedButton<bool>(
               segments: const [
-                ButtonSegment(value: false, icon: Icon(Icons.public, size: 16), label: Text('公开')),
-                ButtonSegment(value: true, icon: Icon(Icons.lock_outline, size: 16), label: Text('私密')),
+                ButtonSegment(value: false, icon: Icon(Icons.public, size: 16), label: AuroraText('公开')),
+                ButtonSegment(value: true, icon: Icon(Icons.lock_outline, size: 16), label: AuroraText('私密')),
               ],
               selected: {_private},
               onSelectionChanged: (v) => setState(() => _private = v.first),
@@ -287,13 +292,13 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
         ]),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const AuroraText('取消')),
         FilledButton(
           onPressed: () {
             widget.app.prefs.setString('lastGame', _game);
             Navigator.pop(context, CreateRoomResult(_name.text.trim(), _game, Map.of(_opts), _pwd.text, _private));
           },
-          child: const Text('创建'),
+          child: const AuroraText('创建'),
         ),
       ],
     );

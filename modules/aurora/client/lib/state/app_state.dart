@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:aurora_shared/aurora_shared.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../net/connection.dart';
@@ -12,6 +13,7 @@ import '../platform/local_session.dart';
 import '../platform/replay_store.dart';
 import '../platform/sfx.dart';
 import '../voice/voice.dart';
+import '../i18n/aurora_i18n.dart';
 
 class ChatLine {
   final int from;
@@ -20,7 +22,14 @@ class ChatLine {
   final String text;
   final DateTime time;
   final bool system;
-  ChatLine(this.from, this.name, this.avatar, this.text, this.time, this.system);
+  ChatLine(
+    this.from,
+    this.name,
+    this.avatar,
+    this.text,
+    this.time,
+    this.system,
+  );
 }
 
 /// Snapshot of the game state sent by the server for this client.
@@ -36,9 +45,17 @@ class GameState {
   /// game seat -> ms left on the turn clock when this state was received.
   final Map<int, int> deadlines;
   final DateTime received;
-  GameState(this.game, this.seat, this.names, this.bots, this.avatars, this.view, this.over,
-      {this.deadlines = const {}, DateTime? received})
-      : received = received ?? DateTime.now();
+  GameState(
+    this.game,
+    this.seat,
+    this.names,
+    this.bots,
+    this.avatars,
+    this.view,
+    this.over, {
+    this.deadlines = const {},
+    DateTime? received,
+  }) : received = received ?? DateTime.now();
 }
 
 /// A quick emote/phrase shown as a floating bubble.
@@ -60,6 +77,9 @@ class AppState extends ChangeNotifier {
   String name = '';
   int avatar = 1;
   String themeId = 'majsoul';
+
+  /// UI language. `zh` is Simplified Chinese and `en` is English.
+  String language = 'zh';
   List<String> recentServers = [];
   double uiScale = 1.0;
 
@@ -140,25 +160,40 @@ class AppState extends ChangeNotifier {
   DateTime? autoLeaveAt;
   static const autoLeaveDelay = Duration(seconds: 3);
   Timer? _autoLeaveTimer;
-  bool _leftFinished = false; // finished game already dismissed: don't show it again
+  bool _leftFinished =
+      false; // finished game already dismissed: don't show it again
   final List<ChatLine> chat = [];
   int unreadChat = 0;
 
   final _toasts = StreamController<String>.broadcast();
   Stream<String> get toasts => _toasts.stream;
 
-  Future<void> load() async {
+  Future<void> load({String? initialLanguage}) async {
     prefs = await SharedPreferences.getInstance();
     name = prefs.getString('name') ?? '';
-    avatar = prefs.getInt('avatar') ?? 1 + DateTime.now().millisecond % kAvatarCount;
+    avatar =
+        prefs.getInt('avatar') ?? 1 + DateTime.now().millisecond % kAvatarCount;
     themeId = prefs.getString('theme') ?? 'majsoul';
+    final systemLanguage =
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en'
+        ? 'en'
+        : 'zh';
+    language =
+        initialLanguage ??
+        prefs.getString('language') ??
+        (kIsWeb ? systemLanguage : 'zh');
+    currentAuroraLanguage = AuroraLanguage.fromCode(language);
     recentServers = prefs.getStringList('servers') ?? [];
     uiScale = prefs.getDouble('uiScale') ?? 1.0;
-    if (kIsWebTransport) pendingInvitation = AuroraInvitation.parse(Uri.base.toString());
+    if (kIsWebTransport)
+      pendingInvitation = AuroraInvitation.parse(Uri.base.toString());
     uid = prefs.getString('uid') ?? '';
     if (uid.length != 64) {
       final r = Random.secure();
-      uid = [for (var i = 0; i < 32; i++) r.nextInt(256).toRadixString(16).padLeft(2, '0')].join();
+      uid = [
+        for (var i = 0; i < 32; i++)
+          r.nextInt(256).toRadixString(16).padLeft(2, '0'),
+      ].join();
       prefs.setString('uid', uid);
     }
     sfx.enabled = prefs.getBool('sfx') ?? true;
@@ -181,7 +216,15 @@ class AppState extends ChangeNotifier {
 
   Map<String, dynamic>? gameInfo(String id) {
     for (final g in games) {
-      if (g['id'] == id) return g;
+      if (g['id'] == id) {
+        if (currentAuroraLanguage == AuroraLanguage.zhCN) return g;
+        return {
+          ...g,
+          'name': auroraGameText('${g['name']}'),
+          'category': auroraCategory('${g['category']}'),
+          'description': auroraEnglish['${g['description']}'] ?? g['description'],
+        };
+      }
     }
     return null;
   }
@@ -189,6 +232,19 @@ class AppState extends ChangeNotifier {
   void setTheme(String id) {
     themeId = id;
     prefs.setString('theme', id);
+    notifyListeners();
+  }
+
+  AuroraLanguage get auroraLanguage => AuroraLanguage.fromCode(language);
+
+  void setLanguage(String code) {
+    final next = AuroraLanguage.fromCode(code).code;
+    if (language == next &&
+        currentAuroraLanguage == AuroraLanguage.fromCode(next))
+      return;
+    language = next;
+    currentAuroraLanguage = AuroraLanguage.fromCode(next);
+    prefs.setString('language', next);
     notifyListeners();
   }
 
@@ -285,14 +341,18 @@ class AppState extends ChangeNotifier {
     final c = _replayWaits[id] = Completer<Uint8List>();
     _chunks.remove(id);
     send({'t': Msg.getReplay, 'id': id});
-    return c.future.timeout(const Duration(seconds: 40), onTimeout: () {
-      _replayWaits.remove(id);
-      _chunks.remove(id);
-      throw TimeoutException('下载回放超时');
-    });
+    return c.future.timeout(
+      const Duration(seconds: 40),
+      onTimeout: () {
+        _replayWaits.remove(id);
+        _chunks.remove(id);
+        throw TimeoutException('下载回放超时');
+      },
+    );
   }
 
-  Future<Replay> fetchReplay(String id) async => decodeReplayGz(await fetchReplayGz(id));
+  Future<Replay> fetchReplay(String id) async =>
+      decodeReplayGz(await fetchReplayGz(id));
 
   void _onReplayChunk(Map<String, dynamic> m) {
     final id = asStr(m['id']);
@@ -317,15 +377,21 @@ class AppState extends ChangeNotifier {
   }
 
   void requestStats() => send({'t': Msg.myStats});
-  void requestLeaderboard(String game) => send({'t': Msg.leaderboard, 'game': game});
+  void requestLeaderboard(String game) =>
+      send({'t': Msg.leaderboard, 'game': game});
 
   // ---- room v3 helpers ----
-  Map<String, dynamic> get caps => (room?['caps'] as Map?)?.cast<String, dynamic>() ?? const {};
-  Map<String, dynamic>? get pendingRequest => (room?['request'] as Map?)?.cast<String, dynamic>();
+  Map<String, dynamic> get caps =>
+      (room?['caps'] as Map?)?.cast<String, dynamic>() ?? const {};
+  Map<String, dynamic>? get pendingRequest =>
+      (room?['request'] as Map?)?.cast<String, dynamic>();
   int get botLevel => asInt(room?['botLevel'], 1).clamp(0, 2);
-  List<Map<String, dynamic>> get tally =>
-      [for (final t in (room?['tally'] as List? ?? const [])) if (t is Map) t.cast<String, dynamic>()];
-  bool get myAuto => mySeat >= 0 && mySeat < seats.length && seats[mySeat]['auto'] == true;
+  List<Map<String, dynamic>> get tally => [
+    for (final t in (room?['tally'] as List? ?? const []))
+      if (t is Map) t.cast<String, dynamic>(),
+  ];
+  bool get myAuto =>
+      mySeat >= 0 && mySeat < seats.length && seats[mySeat]['auto'] == true;
 
   Map<String, dynamic>? _myTallyRow() {
     for (final t in tally) {
@@ -376,16 +442,21 @@ class AppState extends ChangeNotifier {
     if (invite != null) {
       pendingInvitation = invite;
       if (!kIsWebTransport && invite.nativeAddress.isEmpty) {
-        lastError = '该邀请没有客户端地址，请向房主获取客户端地址后连接'; notifyListeners(); return;
+        lastError = '该邀请没有客户端地址，请向房主获取客户端地址后连接';
+        notifyListeners();
+        return;
       }
       addr = kIsWebTransport ? invite.webUrl : invite.nativeAddress;
     }
     address = addr.trim();
     _token = '';
     try {
-      final saved = jsonDecode(prefs.getString('resume:$address') ?? '{}') as Map;
+      final saved =
+          jsonDecode(prefs.getString('resume:$address') ?? '{}') as Map;
       final at = asInt(saved['at'], 0);
-      if (saved['name'] == name && DateTime.now().millisecondsSinceEpoch - at < 600000) _token = asStr(saved['token']);
+      if (saved['name'] == name &&
+          DateTime.now().millisecondsSinceEpoch - at < 600000)
+        _token = asStr(saved['token']);
     } catch (_) {}
     _wantConnected = true;
     lastError = null;
@@ -408,7 +479,8 @@ class AppState extends ChangeNotifier {
         await conn.close();
         state = ConnState.disconnected;
         keyMismatch = address;
-        lastError = '警告：$address 的服务器身份已变化（指纹 ${conn.serverFingerprint}）。'
+        lastError =
+            '警告：$address 的服务器身份已变化（指纹 ${conn.serverFingerprint}）。'
             '可能是服务器重装了，也可能有人在冒充/窃听。确认安全后可在连接页选择"信任新身份"。';
         notifyListeners();
         return;
@@ -495,25 +567,39 @@ class AppState extends ChangeNotifier {
         lastError = null;
         myId = asInt(m['id'], 0);
         _token = asStr(m['token']);
-        prefs.setString('resume:$address', jsonEncode({'token': _token, 'at': DateTime.now().millisecondsSinceEpoch, 'name': name}));
+        prefs.setString(
+          'resume:$address',
+          jsonEncode({
+            'token': _token,
+            'at': DateTime.now().millisecondsSinceEpoch,
+            'name': name,
+          }),
+        );
         publicWebUrl = asStr(m['publicWebUrl']);
         publicNativeAddress = asStr(m['publicNativeAddress']);
         webPort = m['webPort'] is int ? m['webPort'] as int : null;
         serverName = asStr(m['server']);
-        games = [for (final g in (m['games'] as List? ?? [])) (g as Map).cast<String, dynamic>()];
+        games = [
+          for (final g in (m['games'] as List? ?? []))
+            (g as Map).cast<String, dynamic>(),
+        ];
         serverAi = m['ai'] == true;
         aiLabel = asStr(m['aiLabel']);
         pid = asStr(m['pid']);
         if (firstConnect) {
           recentServers.remove(address);
           recentServers.insert(0, address);
-          if (recentServers.length > 8) recentServers = recentServers.sublist(0, 8);
+          if (recentServers.length > 8)
+            recentServers = recentServers.sublist(0, 8);
           prefs.setStringList('servers', recentServers);
         }
       case Msg.dailyState:
         dailyState = m;
       case Msg.rooms:
-        rooms = [for (final r in (m['rooms'] as List? ?? [])) (r as Map).cast<String, dynamic>()];
+        rooms = [
+          for (final r in (m['rooms'] as List? ?? []))
+            (r as Map).cast<String, dynamic>(),
+        ];
         onlineCount = asInt(m['online'], 0);
       case Msg.room:
         final r = m['room'];
@@ -529,11 +615,14 @@ class AppState extends ChangeNotifier {
           chat.clear();
           game = null;
         }
-        if (room != null && pendingInvitation?.room == room!['id']) pendingInvitation = null;
+        if (room != null && pendingInvitation?.room == room!['id'])
+          pendingInvitation = null;
         if (room != null && room!['hasGame'] != true) game = null;
         if (game == null) _cancelAutoLeave();
         if (room == null || prevId != room!['id']) _leftFinished = false;
-        if (room != null && room!['playing'] == true && (!wasPlaying || prevId != room!['id'])) {
+        if (room != null &&
+            room!['playing'] == true &&
+            (!wasPlaying || prevId != room!['id'])) {
           // a match started (or I joined one)
           noteGamePlayed(asStr(room!['game']));
           if (prevId == room!['id'] && mySeat >= 0) sfx.play(SfxKind.start);
@@ -558,7 +647,8 @@ class AppState extends ChangeNotifier {
             (m['view'] as Map).cast<String, dynamic>(),
             m['over'] == true,
             deadlines: {
-              for (final e in ((m['deadlines'] as Map?) ?? const {}).entries) int.parse('${e.key}'): asInt(e.value, 0),
+              for (final e in ((m['deadlines'] as Map?) ?? const {}).entries)
+                int.parse('${e.key}'): asInt(e.value, 0),
             },
           );
           _gameSounds(prev, game!);
@@ -569,22 +659,44 @@ class AppState extends ChangeNotifier {
           }
         }
       case Msg.chatMsg:
-        chat.add(ChatLine(asInt(m['from'], 0), asStr(m['name']), asInt(m['avatar'], 0), asStr(m['text']),
-            DateTime.fromMillisecondsSinceEpoch(asInt(m['ts'], 0)), m['system'] == true));
+        chat.add(
+          ChatLine(
+            asInt(m['from'], 0),
+            asStr(m['name']),
+            asInt(m['avatar'], 0),
+            asStr(m['text']),
+            DateTime.fromMillisecondsSinceEpoch(asInt(m['ts'], 0)),
+            m['system'] == true,
+          ),
+        );
         if (chat.length > 300) chat.removeRange(0, chat.length - 300);
         unreadChat++;
       case Msg.emoteMsg:
         final e = asInt(m['e']);
         if (e < 0 || e >= kEmotes.length) return;
-        final ev = EmoteEvent(asStr(m['name']), asInt(m['avatar'], 0), kEmotes[e], asInt(m['seat']));
-        chat.add(ChatLine(asInt(m['from'], 0), ev.name, ev.avatar, ev.text, DateTime.now(), false));
+        final ev = EmoteEvent(
+          asStr(m['name']),
+          asInt(m['avatar'], 0),
+          kEmotes[e],
+          asInt(m['seat']),
+        );
+        chat.add(
+          ChatLine(
+            asInt(m['from'], 0),
+            ev.name,
+            ev.avatar,
+            ev.text,
+            DateTime.now(),
+            false,
+          ),
+        );
         if (chat.length > 300) chat.removeRange(0, chat.length - 300);
         _emotes.add(ev);
         sfx.play(SfxKind.emote);
       case Msg.replays:
         replayList = [
           for (final r in (m['replays'] as List? ?? const []))
-            if (r is Map) ReplayMeta.fromJson(r.cast<String, dynamic>())
+            if (r is Map) ReplayMeta.fromJson(r.cast<String, dynamic>()),
         ];
       case Msg.replayChunk:
         _onReplayChunk(m);
@@ -594,7 +706,7 @@ class AppState extends ChangeNotifier {
       case Msg.board:
         leaderboards[asStr(m['game'])] = [
           for (final r in (m['rows'] as List? ?? const []))
-            if (r is Map) r.cast<String, dynamic>()
+            if (r is Map) r.cast<String, dynamic>(),
         ];
       case Msg.error:
         _toasts.add(asStr(m['msg']));
@@ -605,9 +717,17 @@ class AppState extends ChangeNotifier {
       case Msg.toast:
         _toasts.add(asStr(m['msg']));
       case Msg.pong:
-        if (_token.isNotEmpty && DateTime.now().difference(_resumeSaved).inSeconds >= 60) {
+        if (_token.isNotEmpty &&
+            DateTime.now().difference(_resumeSaved).inSeconds >= 60) {
           _resumeSaved = DateTime.now();
-          prefs.setString('resume:$address', jsonEncode({'token': _token, 'at': _resumeSaved.millisecondsSinceEpoch, 'name': name}));
+          prefs.setString(
+            'resume:$address',
+            jsonEncode({
+              'token': _token,
+              'at': _resumeSaved.millisecondsSinceEpoch,
+              'name': name,
+            }),
+          );
         }
         return;
     }
@@ -636,7 +756,8 @@ class AppState extends ChangeNotifier {
       return;
     }
     final mine = now.deadlines.containsKey(now.seat);
-    if (mine && (prev == null || prev.over || !prev.deadlines.containsKey(now.seat))) {
+    if (mine &&
+        (prev == null || prev.over || !prev.deadlines.containsKey(now.seat))) {
       sfx.play(SfxKind.turn);
     } else if (quiet && prev != null && !prev.over) {
       sfx.play(SfxKind.tick);
@@ -667,10 +788,13 @@ class AppState extends ChangeNotifier {
   // ---- room helpers ----
   bool get isHost => room != null && room!['host'] == myId;
 
-  List<Map<String, dynamic>> get seats =>
-      [for (final s in (room?['seats'] as List? ?? [])) (s as Map).cast<String, dynamic>()];
+  List<Map<String, dynamic>> get seats => [
+    for (final s in (room?['seats'] as List? ?? []))
+      (s as Map).cast<String, dynamic>(),
+  ];
 
-  int get mySeat => seats.indexWhere((s) => (s['client'] as Map?)?['id'] == myId);
+  int get mySeat =>
+      seats.indexWhere((s) => (s['client'] as Map?)?['id'] == myId);
 
   Map<String, dynamic>? memberById(int id) {
     for (final m in (room?['members'] as List? ?? [])) {
@@ -679,7 +803,7 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
-  void toast(String s) => _toasts.add(s);
+  void toast(String s) => _toasts.add(auroraT(s));
 
   @override
   void dispose() {

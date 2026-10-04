@@ -13,6 +13,7 @@ import 'state/app_state.dart';
 import 'theme/themes.dart';
 import 'widgets/mahjong_table.dart';
 import 'platform/resume_scope.dart';
+import 'i18n/aurora_i18n.dart';
 
 export 'theme/themes.dart' show AuroraTheme, hostTheme, assetPrefix;
 
@@ -24,9 +25,10 @@ class AuroraHost {
 
   static AppState? get app => _app;
 
-  static Future<AppState> start() => _starting ??= () async {
+  static Future<AppState> start({String? initialLanguage}) =>
+      _starting ??= () async {
         final app = AppState();
-        await app.load();
+        await app.load(initialLanguage: initialLanguage);
         await MjAutoState.load(app.prefs);
         return _app = app;
       }();
@@ -35,7 +37,10 @@ class AuroraHost {
 /// The Aurora UI as a widget with its own Navigator, sized by the parent.
 class AuroraEmbed extends StatefulWidget {
   final AuroraTheme theme;
-  const AuroraEmbed({super.key, required this.theme});
+
+  /// Host language (`zh` or `en`). When omitted, Aurora uses its saved/browser language.
+  final String? language;
+  const AuroraEmbed({super.key, required this.theme, this.language});
   @override
   State<AuroraEmbed> createState() => _AuroraEmbedState();
 }
@@ -50,13 +55,20 @@ class _AuroraEmbedState extends State<AuroraEmbed> {
     super.initState();
     hostTheme = widget.theme;
     assetPrefix = 'packages/aurora_client/';
-    AuroraHost.start().then((a) {
+    AuroraHost.start(initialLanguage: widget.language).then((a) {
       if (!mounted) return;
+      if (widget.language != null) a.setLanguage(widget.language!);
       a.addListener(_rebuild);
       _toastSub = a.toasts.listen((t) {
         _messenger.currentState
           ?..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(t), duration: const Duration(seconds: 2), behavior: SnackBarBehavior.floating));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(t),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
       });
       setState(() => _app = a);
     });
@@ -66,6 +78,9 @@ class _AuroraEmbedState extends State<AuroraEmbed> {
   void didUpdateWidget(AuroraEmbed old) {
     super.didUpdateWidget(old);
     hostTheme = widget.theme;
+    if (widget.language != null && widget.language != old.language) {
+      AuroraHost.app?.setLanguage(widget.language!);
+    }
   }
 
   void _rebuild() => setState(() {});
@@ -82,28 +97,42 @@ class _AuroraEmbedState extends State<AuroraEmbed> {
     final theme = widget.theme;
     final app = _app;
     if (app == null) return const Center(child: CircularProgressIndicator());
-    return LayoutBuilder(builder: (context, panel) => AppScope(
-      app: app,
-      child: Theme(
-        data: theme.toThemeData(),
-        child: ScaffoldMessenger(
-          key: _messenger,
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(size: Size(panel.maxWidth, panel.maxHeight), textScaler: TextScaler.linear(app.uiScale)),
-            child: DecoratedBox(
-              decoration: theme.backgroundDecoration,
-              child: HeroControllerScope.none(
-                // The route is generated once; _AuroraHome re-reads AppState on every notification.
-                child: ResumeScope(app: app, child: Navigator(onGenerateRoute: (_) => MaterialPageRoute(builder: (_) => const _AuroraHome()))),
+    return LayoutBuilder(
+      builder: (context, panel) => AppScope(
+        app: app,
+        child: AuroraI18n(
+          language: app.auroraLanguage,
+          child: Theme(
+            data: theme.toThemeData(),
+            child: ScaffoldMessenger(
+              key: _messenger,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  size: Size(panel.maxWidth, panel.maxHeight),
+                  textScaler: TextScaler.linear(app.uiScale),
+                ),
+                child: DecoratedBox(
+                  decoration: theme.backgroundDecoration,
+                  child: HeroControllerScope.none(
+                    // The route is generated once; _AuroraHome re-reads AppState on every notification.
+                    child: ResumeScope(
+                      app: app,
+                      child: Navigator(
+                        onGenerateRoute: (_) => MaterialPageRoute(
+                          builder: (_) => const _AuroraHome(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
   }
 }
-
 
 /// Picks the current Aurora screen from AppState (listens via AppScope, so it switches immediately).
 class _AuroraHome extends StatelessWidget {

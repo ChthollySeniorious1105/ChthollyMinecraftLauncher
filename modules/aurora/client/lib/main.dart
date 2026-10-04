@@ -13,6 +13,7 @@ import 'net/connection.dart';
 import 'theme/themes.dart';
 import 'widgets/mahjong_table.dart';
 import 'platform/resume_scope.dart';
+import 'i18n/aurora_i18n.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,9 +25,12 @@ Future<void> main() async {
 
 /// Makes AppState available to the whole tree.
 class AppScope extends InheritedNotifier<AppState> {
-  const AppScope({super.key, required AppState app, required super.child}) : super(notifier: app);
-  static AppState of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
-  static AppState read(BuildContext context) => context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
+  const AppScope({super.key, required AppState app, required super.child})
+    : super(notifier: app);
+  static AppState of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AppScope>()!.notifier!;
+  static AppState read(BuildContext context) =>
+      context.getInheritedWidgetOfExactType<AppScope>()!.notifier!;
 }
 
 class AuroraApp extends StatefulWidget {
@@ -47,7 +51,13 @@ class _AuroraAppState extends State<AuroraApp> {
     _toastSub = widget.app.toasts.listen((t) {
       _messenger.currentState
         ?..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(t), duration: const Duration(seconds: 2), behavior: SnackBarBehavior.floating));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(t),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
     });
   }
 
@@ -78,28 +88,39 @@ class _AuroraAppState extends State<AuroraApp> {
     }
     return AppScope(
       app: app,
-      child: MaterialApp(
-        title: 'Aurora',
-        debugShowCheckedModeBanner: false,
-        scaffoldMessengerKey: _messenger,
-        theme: theme.toThemeData(),
-        builder: (context, child) {
-          final mq = MediaQuery.of(context);
-          return MediaQuery(
-            data: mq.copyWith(textScaler: TextScaler.linear(app.uiScale)),
-            child: DecoratedBox(
-              decoration: theme.backgroundDecoration,
-              child: Shortcuts(
-                shortcuts: const <ShortcutActivator, Intent>{},
-                child: child!,
+      child: AuroraI18n(
+        language: app.auroraLanguage,
+        child: MaterialApp(
+          title: 'Aurora',
+          locale: Locale(app.language),
+          supportedLocales: const [Locale('zh'), Locale('en')],
+          debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: _messenger,
+          theme: theme.toThemeData(),
+          builder: (context, child) {
+            final mq = MediaQuery.of(context);
+            return MediaQuery(
+              data: mq.copyWith(textScaler: TextScaler.linear(app.uiScale)),
+              child: DecoratedBox(
+                decoration: theme.backgroundDecoration,
+                child: Shortcuts(
+                  shortcuts: const <ShortcutActivator, Intent>{},
+                  child: child!,
+                ),
+              ),
+            );
+          },
+          home: ResumeScope(
+            app: app,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: KeyedSubtree(
+                key: ValueKey('${home.runtimeType}:${app.language}'),
+                child: home,
               ),
             ),
-          );
-        },
-        home: ResumeScope(app: app, child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: KeyedSubtree(key: ValueKey(home.runtimeType), child: home),
-        )),
+          ),
+        ),
       ),
     );
   }
