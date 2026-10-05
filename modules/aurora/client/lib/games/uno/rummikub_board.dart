@@ -89,7 +89,14 @@ class _RummikubBoardState extends State<RummikubBoard> {
   void _remove(int id) {
     _rack.remove(id);
     for (final s in _table) {
-      s.remove(id);
+      if (!s.remove(id)) continue;
+      // 拿走一张后剩下的牌可能仍能成组，但顺序被 _sortLoose 打乱过（鬼牌排在末尾），重新整理
+      final n = rkNormalize(s);
+      if (n != null && !identical(n, s)) {
+        s
+          ..clear()
+          ..addAll(n);
+      }
     }
     _table.removeWhere((s) => s.isEmpty);
   }
@@ -149,7 +156,8 @@ class _RummikubBoardState extends State<RummikubBoard> {
     return r;
   }
 
-  Widget _tile(int id, double w, {bool fromTable = false}) {
+  Widget _tile(int id, double w, {int setIndex = -1}) {
+    final fromTable = setIndex >= 0;
     final v = g.view;
     final added = (v['lastAdded'] as List).cast<int>();
     final canMove = _myTurn && (!fromTable || (v['melded'] as List)[g.seat] == true || !_origTable.contains(id));
@@ -158,7 +166,19 @@ class _RummikubBoardState extends State<RummikubBoard> {
       width: w,
       selected: _sel == id,
       highlight: fromTable && (added.contains(id) || !_origTable.contains(id)),
-      onTap: canMove ? () => setState(() => _sel = _sel == id ? null : id) : null,
+      onTap: canMove
+          ? () {
+              final sel = _sel;
+              // 牌面会抢走组合/手牌区的点击：已选中别的牌时，点这张牌等同于点它所在的区域
+              if (sel != null && fromTable && !_table[setIndex].contains(sel)) {
+                _moveTo(sel, setIndex);
+              } else if (sel != null && !fromTable && !_rack.contains(sel)) {
+                _toRack(sel);
+              } else {
+                setState(() => _sel = sel == id ? null : id);
+              }
+            }
+          : null,
     );
     if (!canMove) return t;
     return Draggable<int>(
@@ -172,7 +192,7 @@ class _RummikubBoardState extends State<RummikubBoard> {
   Widget _setBox(int i, double w) {
     final cs = Theme.of(context).colorScheme;
     final s = _table[i];
-    final ok = rkValid(s);
+    final ok = rkNormalize(s) != null;
     return DragTarget<int>(
       onWillAcceptWithDetails: (_) => _myTurn,
       onAcceptWithDetails: (d) => _moveTo(d.data, i),
@@ -185,14 +205,14 @@ class _RummikubBoardState extends State<RummikubBoard> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: ok ? Colors.transparent : Colors.redAccent, width: 2),
           ),
-          child: Wrap(spacing: 2, runSpacing: 2, children: [for (final t in s) _tile(t, w, fromTable: true)]),
+          child: Wrap(spacing: 2, runSpacing: 2, children: [for (final t in s) _tile(t, w, setIndex: i)]),
         ),
       ),
     );
   }
 
   bool _canSubmit() {
-    if (!_table.every(rkValid)) return false;
+    if (!_table.every((s) => rkNormalize(s) != null)) return false;
     final added = [for (final s in _table) ...s].where((t) => !_origTable.contains(t)).toList();
     return added.isNotEmpty;
   }
@@ -211,7 +231,7 @@ class _RummikubBoardState extends State<RummikubBoard> {
     final serverRack = (v['rack'] as List).cast<int>();
     final dirty = _rack.length != serverRack.length || _table.length != serverTable.length ||
         _table.map((s) => s.join(',')).join(';') != serverTable.map((s) => s.join(',')).join(';');
-    final addedPts = [for (final s in _table) if (s.every((t) => !_origTable.contains(t)) && rkValid(s)) rkSetValue(s)!]
+    final addedPts = [for (final s in _table) if (s.every((t) => !_origTable.contains(t)) && rkNormalize(s) != null) rkSetValue(rkNormalize(s)!)!]
             .fold<int>(0, (a, b) => a + b);
 
     String status;
