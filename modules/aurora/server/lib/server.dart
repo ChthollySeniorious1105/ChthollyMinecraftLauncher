@@ -8,6 +8,7 @@ import 'package:aurora_shared/aurora_shared.dart';
 import 'package:aurora_shared/src/simulate.dart' show rebuildEngine;
 import 'package:crypto/crypto.dart' as hash;
 
+import 'chat_reactions.dart';
 import 'replay_store.dart';
 import 'stats.dart';
 import 'party.dart';
@@ -187,6 +188,7 @@ class Room implements GameHost {
   Map<String, dynamic> options;
   List<Seat> seats = [];
   final Set<Client> members = {};
+  final ChatReactions reactions = ChatReactions();
   GameEngine? engine;
 
   /// game seat -> room seat index for the running engine.
@@ -1331,6 +1333,8 @@ class AuroraServer {
   final Map<String, Client> _byToken = {};
   final Map<String, Room> rooms = {};
   int _nextId = 1;
+  int _nextChatId = 1;
+  final ChatReactions lobbyReactions = ChatReactions();
   final Random _rng = Random.secure();
   Timer? _sweeper;
   bool _roomListDirty = false;
@@ -1419,6 +1423,19 @@ class AuroraServer {
   }
 
   Iterable<Client> get onlineClients => _byToken.values.where((c) => c.online);
+
+  /// Send to everyone in [c]'s chat channel: its room, or the lobby.
+  void _chatBroadcast(Client c, Map<String, dynamic> msg) {
+    final room = c.room;
+    if (room != null) {
+      room.broadcast(msg);
+      return;
+    }
+    final bytes = encodeJson(msg);
+    for (final o in onlineClients) {
+      if (o.room == null) o.sendRaw(bytes);
+    }
+  }
 
   Future<void> start() async {
     _socket = await ServerSocket.bind(InternetAddress.anyIPv4, port);
@@ -2054,8 +2071,10 @@ class AuroraServer {
           if (text.isEmpty) return;
           if (!c.allowChat()) throw GameError('发言太快了，请稍后再试');
           if (text.length > 500) text = text.substring(0, 500);
+          final id = _nextChatId++;
           final msg = {
             't': Msg.chatMsg,
+            'id': id,
             'from': c.id,
             'name': c.name,
             'avatar': c.avatar,
@@ -2064,14 +2083,13 @@ class AuroraServer {
             'system': false,
           };
           final room = c.room;
-          if (room != null) {
-            room.broadcast(msg);
-          } else {
-            final bytes = encodeJson(msg);
-            for (final o in onlineClients) {
-              if (o.room == null) o.sendRaw(bytes);
-            }
-          }
+          (room?.reactions ?? lobbyReactions).track(id);
+          _chatBroadcast(c, msg);
+        case Msg.react:
+          final id = asInt(m['id']), e = asInt(m['e']);
+          if (!c.allowChat()) throw GameError('操作太快了，请稍后再试');
+          final on = (c.room?.reactions ?? lobbyReactions).toggle(id, e, c.id);
+          _chatBroadcast(c, {'t': Msg.reactMsg, 'id': id, 'e': e, 'from': c.id, 'name': c.name, 'on': on});
         case Msg.listReplays:
           c.send({'t': Msg.replays, 'replays': replays.list(pid: m['mine'] == true ? c.pid : null)});
         case Msg.getReplay:

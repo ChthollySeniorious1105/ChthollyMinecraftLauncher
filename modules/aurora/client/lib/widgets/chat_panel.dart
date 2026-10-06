@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import '../i18n/aurora_i18n.dart';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import 'package:aurora_shared/aurora_shared.dart';
+
 import '../main.dart';
+import '../state/app_state.dart';
 import 'common.dart';
 
 /// Text chat list + input, plus optional voice controls.
@@ -19,6 +25,59 @@ class _ChatPanelState extends State<ChatPanel> {
   final _scroll = ScrollController();
   final _focus = FocusNode();
   int _lastLen = 0;
+
+  void _react(ChatLine l, int e) =>
+      AppScope.read(context).send({'t': Msg.react, 'id': l.id, 'e': e});
+
+  /// Emoji picker anchored at [pos] (long-press / right-click on a bubble).
+  Future<void> _pickReaction(ChatLine l, Offset pos) async {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final e = await showMenu<int>(
+      context: context,
+      position: RelativeRect.fromRect(
+        pos & const Size(1, 1),
+        Offset.zero & overlay.size,
+      ),
+      items: [const _ReactionGrid()],
+    );
+    if (e != null && mounted) _react(l, e);
+  }
+
+  Widget _reactionRow(ChatLine l, int myId, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: [
+          for (final r in l.reactions.entries)
+            Tooltip(
+              message: r.value.values.join('、'),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _react(l, r.key),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: r.value.containsKey(myId)
+                        ? cs.primary.withValues(alpha: 0.25)
+                        : cs.surfaceContainerHighest.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: r.value.containsKey(myId) ? cs.primary : Colors.transparent,
+                    ),
+                  ),
+                  child: Text(
+                    '${kReactions[r.key]} ${r.value.length}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
   void _send() {
     final t = _ctl.text.trim();
@@ -114,7 +173,12 @@ class _ChatPanelState extends State<ChatPanel> {
                               color: cs.onSurface.withValues(alpha: 0.7),
                             ),
                           ),
-                          Container(
+                          _ReactTarget(
+                            enabled: l.id != 0,
+                            mine: mine,
+                            onQuick: () => _react(l, 0), // 😂
+                            onPick: (pos) => _pickReaction(l, pos),
+                            child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 6,
@@ -134,6 +198,9 @@ class _ChatPanelState extends State<ChatPanel> {
                               ),
                             ),
                           ),
+                          ),
+                          if (l.reactions.isNotEmpty)
+                            _reactionRow(l, app.myId, cs),
                         ],
                       ),
                     ),
@@ -354,6 +421,152 @@ class VolumeSliders extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Wraps a chat bubble: hovering shows a quick 😂 button plus a "more" button;
+/// long-press / right-click opens the full reaction picker.
+class _ReactTarget extends StatefulWidget {
+  final bool enabled;
+  final bool mine;
+  final VoidCallback onQuick;
+  final void Function(Offset globalPos) onPick;
+  final Widget child;
+  const _ReactTarget({
+    required this.enabled,
+    required this.mine,
+    required this.onQuick,
+    required this.onPick,
+    required this.child,
+  });
+
+  @override
+  State<_ReactTarget> createState() => _ReactTargetState();
+}
+
+class _ReactTargetState extends State<_ReactTarget> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.child;
+    final cs = Theme.of(context).colorScheme;
+    Widget btn(Widget icon, String tip, void Function(Offset) onTap) => Builder(
+      builder: (bc) => Tooltip(
+        message: tip,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            final box = bc.findRenderObject() as RenderBox;
+            onTap(box.localToGlobal(box.size.bottomLeft(Offset.zero)));
+          },
+          child: Padding(padding: const EdgeInsets.all(3), child: icon),
+        ),
+      ),
+    );
+    final tools = AnimatedOpacity(
+      duration: const Duration(milliseconds: 120),
+      opacity: _hover ? 1 : 0,
+      child: IgnorePointer(
+        ignoring: !_hover,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            btn(const Text('😂', style: TextStyle(fontSize: 16)), auroraT('笑哭'), (_) => widget.onQuick()),
+            btn(Icon(Icons.add_reaction_outlined, size: 18, color: cs.onSurface.withValues(alpha: 0.7)),
+                auroraT('贴表情'), widget.onPick),
+          ],
+        ),
+      ),
+    );
+    // A raw Listener, not a GestureDetector: the bubble's SelectableText wins the
+    // gesture arena for long-press / right-click, so those would never reach us.
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Listener(
+        onPointerDown: (e) {
+          if (e.kind == PointerDeviceKind.mouse && e.buttons & kSecondaryMouseButton != 0) {
+            widget.onPick(e.position);
+          } else if (e.kind != PointerDeviceKind.mouse) {
+            _downAt = e.position;
+            _longPress?.cancel();
+            _longPress = Timer(kLongPressTimeout, () => widget.onPick(e.position));
+          }
+        },
+        onPointerMove: (e) {
+          if (_downAt != null && (e.position - _downAt!).distance > kTouchSlop) _cancelLongPress();
+        },
+        onPointerUp: (_) => _cancelLongPress(),
+        onPointerCancel: (_) => _cancelLongPress(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          textDirection: widget.mine ? TextDirection.rtl : TextDirection.ltr,
+          children: [
+            Flexible(child: widget.child),
+            const SizedBox(width: 2),
+            tools,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Timer? _longPress;
+  Offset? _downAt;
+
+  void _cancelLongPress() {
+    _longPress?.cancel();
+    _longPress = null;
+    _downAt = null;
+  }
+
+  @override
+  void dispose() {
+    _longPress?.cancel();
+    super.dispose();
+  }
+}
+
+/// Popup menu body: every reaction in a grid; tapping one returns its index.
+class _ReactionGrid extends PopupMenuEntry<int> {
+  const _ReactionGrid();
+
+  @override
+  double get height => 2 * 40;
+
+  @override
+  bool represents(int? value) => false;
+
+  @override
+  State<_ReactionGrid> createState() => _ReactionGridState();
+}
+
+class _ReactionGridState extends State<_ReactionGrid> {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: SizedBox(
+        width: 6 * 40,
+        child: Wrap(
+          children: [
+            for (var i = 0; i < kReactions.length; i++)
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => Navigator.of(context).pop(i),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(
+                    child: Text(kReactions[i], style: const TextStyle(fontSize: 22)),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

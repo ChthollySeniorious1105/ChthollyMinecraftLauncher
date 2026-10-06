@@ -140,6 +140,7 @@ abstract class Msg {
   // ---- v3 platform features (client -> server) ----
   static const setRoomOpts = 'set_room_opts'; // host {botLevel?, series?, specDelay?}
   static const emote = 'emote'; // {e: index into kEmotes}
+  static const react = 'react'; // {id (chat message id), e: index into kReactions} toggles my reaction
   static const autoPlay = 'auto_play'; // {on} 托管 my seat
   static const resign = 'resign'; // 认输
   static const request = 'request'; // {kind: 'undo'|'draw'} ask the other players
@@ -162,7 +163,8 @@ abstract class Msg {
   static const rooms = 'rooms'; // {rooms:[...]}
   static const room = 'room'; // full room snapshot or {room:null}
   static const game = 'game'; // {view, seat}
-  static const chatMsg = 'chat_msg'; // {from, name, avatar, text, ts, system}
+  static const chatMsg = 'chat_msg'; // {id, from, name, avatar, text, ts, system}
+  static const reactMsg = 'react_msg'; // {id, e, from, name, on} a reaction was added (on) / removed
   static const error = 'error'; // {msg}
   static const pong = 'pong';
   static const toast = 'toast'; // {msg}
@@ -174,6 +176,12 @@ const List<String> kEmotes = [
   '👍', '😂', '😭', '😡', '😱', '🤔', '😎', '🙏', '🎉', '💤', '❤️', '🤡',
   '快点吧，等得花儿都谢了', '打得漂亮！', '哈哈哈哈', '失误了失误了', '好险！', '再来一局？',
   '你是魔鬼吗', '合作愉快', '我太难了', '稳住，我们能赢',
+];
+
+/// Emoji that can be stuck onto a chat message (index = reaction id; never
+/// reorder, only append — ids go over the wire).
+const List<String> kReactions = [
+  '😂', '👍', '❤️', '🤣', '😭', '😮', '😡', '🤔', '🎉', '🙏', '👀', '💯',
 ];
 
 /// Bot difficulty labels (GameSetup.botLevel).

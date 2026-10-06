@@ -23,14 +23,21 @@ class ChatLine {
   final String text;
   final DateTime time;
   final bool system;
+
+  /// Server message id; 0 = can't be reacted to (system lines, emotes, old servers).
+  final int id;
+
+  /// Reaction index (into kReactions) -> names of who reacted, in order.
+  final Map<int, Map<int, String>> reactions = {};
   ChatLine(
     this.from,
     this.name,
     this.avatar,
     this.text,
     this.time,
-    this.system,
-  );
+    this.system, {
+    this.id = 0,
+  });
 }
 
 /// Snapshot of the game state sent by the server for this client.
@@ -673,10 +680,23 @@ class AppState extends ChangeNotifier {
             asStr(m['text']),
             DateTime.fromMillisecondsSinceEpoch(asInt(m['ts'], 0)),
             m['system'] == true,
+            id: asInt(m['id'], 0),
           ),
         );
         if (chat.length > 300) chat.removeRange(0, chat.length - 300);
         unreadChat++;
+      case Msg.reactMsg:
+        final id = asInt(m['id'], 0), e = asInt(m['e'], -1);
+        if (id == 0 || e < 0 || e >= kReactions.length) return;
+        final line = chat.reversed.where((l) => l.id == id).firstOrNull;
+        if (line == null) return;
+        final who = line.reactions.putIfAbsent(e, () => {});
+        if (m['on'] == true) {
+          who[asInt(m['from'], 0)] = asStr(m['name']);
+        } else {
+          who.remove(asInt(m['from'], 0));
+          if (who.isEmpty) line.reactions.remove(e);
+        }
       case Msg.emoteMsg:
         final e = asInt(m['e']);
         if (e < 0 || e >= kEmotes.length) return;
