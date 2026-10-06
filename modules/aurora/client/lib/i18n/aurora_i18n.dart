@@ -176,6 +176,8 @@ const Map<String, String> auroraEnglish = {
   '音量调节': 'Volume',
   '语音音量调节': 'Voice volume',
   '说点什么…': 'Say something…',
+  '笑哭': 'Tears of joy',
+  '贴表情': 'Add reaction',
   '复制邀请链接': 'Copy invite link',
   '已连接服务器，点击加入邀请房间': 'Connected to the server. Tap to join the invited room.',
   '请填写有效的 http 或 https 地址': 'Enter a valid http or https address',

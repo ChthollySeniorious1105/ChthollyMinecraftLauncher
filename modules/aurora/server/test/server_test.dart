@@ -291,6 +291,42 @@ void main() {
     expect((rg['room']['members'] as List).length, 3);
   });
 
+  test('chat reactions: stick 😂 on someone else\'s message, toggle off', () async {
+    final a = TClient(), b = TClient();
+    await a.connect(port);
+    await b.connect(port);
+    a.send({'t': 'hello', 'ver': kProtocolVersion, 'name': '甲', 'avatar': 1, 'token': ''});
+    b.send({'t': 'hello', 'ver': kProtocolVersion, 'name': '乙', 'avatar': 2, 'token': ''});
+    final wb = await b.waitT(Msg.welcome);
+    await a.waitT(Msg.welcome);
+    a.send({'t': 'create_room', 'name': 'r', 'game': 'tictactoe'});
+    final rid = (await a.wait((m) => m['t'] == Msg.room && m['room'] != null))['room']['id'];
+    b.send({'t': 'join_room', 'room': rid});
+    await b.wait((m) => m['t'] == Msg.room && m['room'] != null);
+
+    a.send({'t': 'chat', 'text': '笑死'});
+    final msg = await b.wait((m) => m['t'] == Msg.chatMsg && m['text'] == '笑死');
+    final id = msg['id'] as int;
+    expect(id, greaterThan(0));
+    expect(kReactions[0], '😂');
+
+    b.send({'t': Msg.react, 'id': id, 'e': 0});
+    final on = await a.waitT(Msg.reactMsg);
+    expect(on, containsPair('id', id));
+    expect(on['e'], 0);
+    expect(on['on'], isTrue);
+    expect(on['from'], wb['id']);
+    expect(on['name'], '乙');
+
+    b.send({'t': Msg.react, 'id': id, 'e': 0});
+    expect((await a.waitT(Msg.reactMsg))['on'], isFalse);
+
+    b.send({'t': Msg.react, 'id': id + 999, 'e': 0});
+    expect((await b.waitT(Msg.error))['msg'], contains('太旧'));
+    b.send({'t': Msg.react, 'id': id, 'e': kReactions.length});
+    expect((await b.waitT(Msg.error))['msg'], contains('无效'));
+  });
+
   group('security', () {
     Future<bool> closedSoon(Socket s) async {
       final done = Completer<bool>();
