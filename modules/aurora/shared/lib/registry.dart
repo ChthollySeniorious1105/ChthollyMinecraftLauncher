@@ -35,6 +35,11 @@ import 'games/light/defs.dart';
 import 'games/party3/defs.dart';
 import 'src/engine.dart';
 import 'games/party4/defs.dart';
+import 'games/arcade2/defs.dart';
+import 'games/family/defs.dart';
+import 'games/duel2/defs.dart';
+import 'games/words/defs.dart';
+import 'games/bang/defs.dart';
 
 /// All game types known to the server and clients. Order = lobby order.
 /// Each game package owns its own defs.dart list; add games there, not here.
@@ -75,6 +80,11 @@ final List<GameDef> gameRegistry = [
   ...euro2Games,
   ...lightGames,
   ...party3Games,
+  ...arcade2Games,
+  ...familyGames,
+  ...duel2Games,
+  ...wordsGames,
+  ...bangGames,
 ];
 
 GameDef? findGame(String id) {

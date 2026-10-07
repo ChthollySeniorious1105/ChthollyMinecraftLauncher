@@ -37,6 +37,11 @@ import 'euro2/boards.dart';
 import 'light/boards.dart';
 import 'party3/boards.dart';
 import 'party4/boards.dart';
+import 'arcade2/boards.dart';
+import 'family/boards.dart';
+import 'duel2/boards.dart';
+import 'words/boards.dart';
+import 'bang/boards.dart';
 
 /// Game id -> board widget. Each game package owns its own boards.dart map.
 final Map<String, BoardBuilder> boardRegistry = {
@@ -76,6 +81,11 @@ final Map<String, BoardBuilder> boardRegistry = {
   ...euro2Boards,
   ...lightBoards,
   ...party3Boards,
+  ...arcade2Boards,
+  ...familyBoards,
+  ...duel2Boards,
+  ...wordsBoards,
+  ...bangBoards,
 };
 
 Widget buildBoard(GameContext g) {

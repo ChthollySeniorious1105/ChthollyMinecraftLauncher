@@ -276,6 +276,18 @@ const Map<String, String> auroraEnglish = {
 /// English names for the game catalog. Descriptions that are not listed retain their Chinese
 /// source, so no server protocol changes are needed when a new game is added.
 const Map<String, String> auroraGameEnglish = {
+  '蟑螂扑克': 'Cockroach Poker',
+  '西部无间道': 'Bang!',
+  '炸弹人': 'Bomberman',
+  '眼疾手快': 'Spot It!',
+  '汉兜': 'Handle (Idiom Wordle)',
+  'Wordle': 'Wordle',
+  '抽乌龟': 'Old Maid',
+  '钓鱼': 'Go Fish',
+  '牌七': 'Sevens',
+  '斋浦尔': 'Jaipur',
+  '失落的城市': 'Lost Cities',
+  '暗棋': 'Banqi (Dark Chess)',
   '围棋': 'Go',
   '国际象棋': 'Chess',
   '中国象棋': 'Xiangqi',
