@@ -107,11 +107,15 @@ class _RummikubBoardState extends State<RummikubBoard> {
       _remove(id);
       if (target != null && _table.contains(target)) {
         target.add(id);
+        // rkNormalize returns the same list when it is already valid (e.g. a
+        // group dropped in colour order) — copy before clearing, or the set
+        // and its tiles vanish.
         final n = rkNormalize(target);
         if (n != null) {
+          final fixed = List.of(n);
           target
             ..clear()
-            ..addAll(n);
+            ..addAll(fixed);
         } else {
           _sortLoose(target);
         }
